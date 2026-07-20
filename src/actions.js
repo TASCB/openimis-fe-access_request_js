@@ -6,7 +6,8 @@ import { ACTION_TYPE } from './reducer';
 const REQUEST_PROJECTION = () => [
   'id', 'referenceCode', 'requestType', 'fullName', 'organizationPaa', 'section',
   'designation', 'email', 'phone', 'status', 'rejectionReason', 'assignedUsername',
-  'profile { id name code }', 'requestedLocation { id name }',
+  'userCategory', 'administrativeLevel',
+  'profile { id name code }', 'requestedLocation { id name type }',
   'createdUser { id username }',
   'dateCreated', 'dateUpdated', 'version',
 ];
@@ -14,8 +15,7 @@ const REQUEST_PROJECTION = () => [
 const REQUEST_FULL_PROJECTION = () => [
   ...REQUEST_PROJECTION(),
   'applicantSignature', 'provisioningError',
-  // The Manager→ICT sign-off now lives in the generic Approval Engine (not this module).
-  // Approvers act from the Tasks inbox; this page only shows status + provisioning.
+  
 ];
 
 const PROFILE_PROJECTION = () => [
@@ -40,8 +40,6 @@ export function fetchAccessProfiles(params) {
   return graphql(payload, ACTION_TYPE.SEARCH_PROFILES);
 }
 
-// Manager/ICT approvals moved to the generic Approval Engine (Tasks inbox / approval dashboard);
-// their in-module mutations were removed. This module keeps only provisioning.
 export function provisionAccessRequest(requestId, username, roleIds, districtIds, clientMutationLabel) {
   const mutation = formatMutation('provisionAccessRequest', `
     id: "${requestId}"

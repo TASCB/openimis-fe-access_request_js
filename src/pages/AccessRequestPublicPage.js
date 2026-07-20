@@ -1,6 +1,5 @@
-// Public (unauthenticated) account request landing + application page.
-// Self-contained: posts directly to the public REST endpoint, no redux/auth.
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/styles';
 import { CircularProgress } from '@material-ui/core';
 import ArrowForward from '@material-ui/icons/ArrowForward';
@@ -10,13 +9,24 @@ import MailOutline from '@material-ui/icons/MailOutline';
 import PersonOutline from '@material-ui/icons/PersonOutline';
 import PhoneOutlined from '@material-ui/icons/PhoneOutlined';
 import BusinessOutlined from '@material-ui/icons/BusinessOutlined';
-import AccountTreeOutlined from '@material-ui/icons/AccountTreeOutlined';
 import WorkOutline from '@material-ui/icons/WorkOutline';
+import GroupOutlined from '@material-ui/icons/GroupOutlined';
+import CategoryOutlined from '@material-ui/icons/CategoryOutlined';
+import LayersOutlined from '@material-ui/icons/LayersOutlined';
+import PlaceOutlined from '@material-ui/icons/PlaceOutlined';
 import Add from '@material-ui/icons/Add';
 import Autorenew from '@material-ui/icons/Autorenew';
 import ErrorOutline from '@material-ui/icons/ErrorOutline';
-import { useModulesManager, useTranslations } from '@openimis/fe-core';
-import { MODULE_NAME, AR_API_SUBMIT, REQUEST_TYPE } from '../constants';
+import { useModulesManager, useTranslations, useHistory } from '@openimis/fe-core';
+import {
+  MODULE_NAME, AR_API_SUBMIT, AR_API_SECTIONS, AR_API_LOCATIONS,
+  REQUEST_TYPE, USER_CATEGORY, ADMIN_LEVEL, PAA_SECTIONS,
+} from '../constants';
+
+const LOC_CHAIN = {
+  [ADMIN_LEVEL.PAA]: ['region', 'district'],
+  [ADMIN_LEVEL.VILLAGE]: ['region', 'district', 'ward', 'village'],
+};
 
 const LOGO = '/front/tasaf-logo.png';
 
@@ -146,6 +156,8 @@ const useStyles = makeStyles({
     '&:hover': { borderColor: '#c9d4cd' },
     '&:focus': { outline: 'none', borderColor: T.primary, boxShadow: `0 0 0 3px rgba(0,105,92,.16)` },
   },
+  select: { cursor: 'pointer', appearance: 'menulist', paddingRight: 12 },
+  selectDisabled: { background: T.paper, cursor: 'not-allowed', color: T.muted },
   inputError: { borderColor: '#c0392b', '&:focus': { borderColor: '#c0392b', boxShadow: '0 0 0 3px rgba(192,57,43,.15)' } },
   errText: { display: 'flex', alignItems: 'center', gap: 5, color: '#c0392b', fontSize: 12, fontWeight: 600, marginTop: 5 },
   errIcon: { fontSize: 14 },
@@ -178,6 +190,13 @@ const useStyles = makeStyles({
     display: 'inline-block', padding: '10px 18px', borderRadius: 10, background: T.paper,
     border: `1px dashed ${T.primary}`, fontFamily: T.head, fontSize: 22, fontWeight: 800, letterSpacing: 1, color: T.forest,
   },
+  successLink: { marginTop: 18 },
+  linkBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+    background: 'transparent', border: 0, color: T.primary, fontFamily: T.body, fontSize: 14, fontWeight: 700,
+    '&:hover': { textDecoration: 'underline' },
+    '&:focus-visible': { outline: 'none', boxShadow: `0 0 0 3px rgba(0,105,92,.28)`, borderRadius: 6 },
+  },
 
   footer: {
     borderTop: `1px solid ${T.border}`, background: T.white, padding: '18px 24px',
@@ -189,7 +208,6 @@ const useStyles = makeStyles({
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Top-level (stable) field — must not be nested in the page or inputs blur each keystroke.
 function Field({
   ctx, name, label, required, icon, type = 'text', placeholder,
 }) {
@@ -223,25 +241,143 @@ function Field({
   );
 }
 
+function SelectField({
+  ctx, name, label, required, icon, options, placeholder, value, onChange, disabled,
+}) {
+  const {
+    classes, fm, form, errors, set,
+  } = ctx;
+  return (
+    <div className={classes.field}>
+      <span className={classes.label}>
+        {label}
+        {required
+          ? <span className={classes.req}>*</span>
+          : <span className={classes.opt}>({fm('public.optional')})</span>}
+      </span>
+      <span className={classes.inputWrap}>
+        {icon}
+        <select
+          className={`${classes.input} ${classes.select} ${disabled ? classes.selectDisabled : ''} ${errors[name] ? classes.inputError : ''}`}
+          value={value !== undefined ? value : form[name]}
+          onChange={onChange || set(name)}
+          disabled={disabled}
+          aria-label={label}
+          aria-invalid={!!errors[name]}
+        >
+          <option value="">{placeholder || fm('public.select.placeholder')}</option>
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </span>
+      {errors[name] && (
+        <span className={classes.errText}><ErrorOutline className={classes.errIcon} />{errors[name]}</span>
+      )}
+    </div>
+  );
+}
+
 export default function AccessRequestPublicPage() {
   const classes = useStyles();
   const modulesManager = useModulesManager();
+  const history = useHistory();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
   const fm = (id) => formatMessage(id);
 
   const [form, setForm] = useState({
     request_type: REQUEST_TYPE.NEW, full_name: '', email: '', phone: '',
-    organization_paa: '', section: '', designation: '', hp: '',
+    organization_paa: '', section_group_id: '', designation: '', hp: '',
+    user_category: '', administrative_level: '',
+    region: '', district: '', ward: '', village: '',
   });
   const [errors, setErrors] = useState({});
   const [state, setState] = useState('idle'); // idle | sending | done
   const [reference, setReference] = useState(null);
   const [submitError, setSubmitError] = useState(null);
 
+  // Reference data (from public REST endpoints).
+  const [sections, setSections] = useState([]);
+  const [locOptions, setLocOptions] = useState({
+    region: [], district: [], ward: [], village: [],
+  });
+
   const isActivate = form.request_type === REQUEST_TYPE.ACTIVATE;
+  const isTasaf = form.user_category === USER_CATEGORY.TASAF_STAFF;
+  const isPaa = form.user_category === USER_CATEGORY.PAA_STAFF;
+  const isOther = form.user_category === USER_CATEGORY.OTHER;
+  const locChain = isPaa ? (LOC_CHAIN[form.administrative_level] || []) : [];
+
+  // Section options depend on the chosen category: TASAF staff → all but "user",
+  // PAA staff → TMO/PSSC/PSSNA, Other → "user" only.
+  const isUserSection = (o) => o.label.trim().toLowerCase() === 'user';
+  const isPaaSection = (o) => PAA_SECTIONS.includes(o.label.trim().toUpperCase());
+  const sectionOptions = sections.filter((o) => {
+    if (isTasaf) return !isUserSection(o) && !isPaaSection(o);
+    if (isPaa) return isPaaSection(o);
+    if (isOther) return isUserSection(o);
+    return false;
+  });
+
   const set = (k) => (e) => {
     setForm({ ...form, [k]: e.target.value });
     if (errors[k]) setErrors({ ...errors, [k]: null });
+  };
+
+  const fetchLocations = (parent) => fetch(
+    `/api/${AR_API_LOCATIONS}${parent ? `?parent=${parent}` : ''}`,
+  ).then((r) => r.json()).then((d) => (d.locations || []).map(
+    (l) => ({ value: String(l.id), label: l.name }),
+  )).catch(() => []);
+
+  // Load sections + root regions once.
+  useEffect(() => {
+    fetch(`/api/${AR_API_SECTIONS}`).then((r) => r.json())
+      .then((d) => setSections((d.sections || []).map((s) => ({ value: String(s.id), label: s.name }))))
+      .catch(() => setSections([]));
+    fetchLocations(null).then((opts) => setLocOptions((p) => ({ ...p, region: opts })));
+  }, []);
+
+  // Cascading select: set this level, clear all deeper levels + their options, load children.
+  const onPickLocation = (level) => (e) => {
+    const value = e.target.value;
+    const idx = ['region', 'district', 'ward', 'village'].indexOf(level);
+    const deeper = ['region', 'district', 'ward', 'village'].slice(idx + 1);
+    const clearedForm = { ...form, [level]: value };
+    deeper.forEach((d) => { clearedForm[d] = ''; });
+    setForm(clearedForm);
+    setErrors((prev) => ({ ...prev, [level]: null, location: null }));
+    const nextLevel = ['region', 'district', 'ward', 'village'][idx + 1];
+    setLocOptions((prev) => {
+      const cleared = { ...prev };
+      deeper.forEach((d) => { cleared[d] = []; });
+      return cleared;
+    });
+    if (nextLevel && value) {
+      fetchLocations(value).then((opts) => setLocOptions((prev) => ({ ...prev, [nextLevel]: opts })));
+    }
+  };
+
+  // Changing category/level must clear now-hidden fields so they never validate or submit.
+  const onPickCategory = (e) => {
+    setForm({
+      ...form, user_category: e.target.value, section_group_id: '', administrative_level: '',
+      region: '', district: '', ward: '', village: '', organization_paa: '', designation: '',
+    });
+    setErrors((p) => ({ ...p, user_category: null, section_group_id: null }));
+  };
+  const onPickAdminLevel = (e) => {
+    setForm({
+      ...form, administrative_level: e.target.value, region: '', district: '', ward: '', village: '',
+    });
+    setErrors((p) => ({ ...p, administrative_level: null }));
+    setLocOptions((p) => ({ ...p, district: [], ward: [], village: [] }));
+  };
+
+  // Deepest selected location id is the one persisted (parents derivable via hierarchy).
+  const deepestLocationId = () => {
+    for (let i = locChain.length - 1; i >= 0; i -= 1) {
+      if (form[locChain[i]]) return form[locChain[i]];
+    }
+    return '';
   };
 
   const validate = () => {
@@ -249,6 +385,19 @@ export default function AccessRequestPublicPage() {
     if (!form.full_name.trim()) errs.full_name = fm('public.form.err.fullNameRequired');
     if (!form.email.trim()) errs.email = fm('public.form.err.emailRequired');
     else if (!EMAIL_RE.test(form.email.trim())) errs.email = fm('public.form.err.emailInvalid');
+    if (!form.section_group_id) errs.section_group_id = fm('public.form.err.sectionRequired');
+    if (!form.user_category) errs.user_category = fm('public.form.err.categoryRequired');
+
+    if (isPaa) {
+      if (!form.administrative_level) errs.administrative_level = fm('public.form.err.adminLevelRequired');
+      // Only validate the location levels that are actually shown for this admin level.
+      locChain.forEach((lvl) => {
+        if (!form[lvl]) errs[lvl] = fm('public.form.err.locationRequired');
+      });
+    } else if (isOther) {
+      if (!form.organization_paa.trim()) errs.organization_paa = fm('public.form.err.orgRequired');
+      if (!form.designation.trim()) errs.designation = fm('public.form.err.jobTitleRequired');
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -257,8 +406,24 @@ export default function AccessRequestPublicPage() {
     setSubmitError(null);
     if (!validate()) return;
     setState('sending');
+    // Send only category-relevant fields; the backend re-validates the same conditions.
+    const section = sections.find((s) => s.value === form.section_group_id);
+    const payload = {
+      request_type: form.request_type,
+      full_name: form.full_name,
+      email: form.email,
+      phone: form.phone,
+      hp: form.hp,
+      section_group_id: form.section_group_id,
+      section: section ? section.label : '',
+      user_category: form.user_category,
+      administrative_level: isPaa ? form.administrative_level : '',
+      requested_location_id: isPaa ? deepestLocationId() : '',
+      organization_paa: isOther ? form.organization_paa : '',
+      designation: isOther ? form.designation : '',
+    };
     fetch(`/api/${AR_API_SUBMIT}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     })
       .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
@@ -307,8 +472,8 @@ export default function AccessRequestPublicPage() {
             <button type="button" className={classes.btnPrimary} onClick={() => scrollTo('ar-form')}>
               {fm('public.hero.start')}<ArrowForward style={{ fontSize: 18 }} />
             </button>
-            <button type="button" className={classes.btnGhost} onClick={() => scrollTo('ar-process')}>
-              {fm('public.hero.learnMore')}
+            <button type="button" className={classes.btnGhost} onClick={() => history.push('/application-status')}>
+              {fm('public.hero.checkStatus')}<ArrowForward style={{ fontSize: 18 }} />
             </button>
           </div>
         </div>
@@ -339,6 +504,15 @@ export default function AccessRequestPublicPage() {
                 <h3 className={classes.successTitle}>{fm('public.form.successTitle')}</h3>
                 <p className={classes.successBody}>{fm('public.form.successBody')}</p>
                 <div className={classes.refBox}>{reference}</div>
+                <div className={classes.successLink}>
+                  <button
+                    type="button"
+                    className={classes.linkBtn}
+                    onClick={() => history.push('/application-status')}
+                  >
+                    {fm('public.form.checkStatus')}<ArrowForward style={{ fontSize: 16 }} />
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -393,26 +567,80 @@ export default function AccessRequestPublicPage() {
                 <div className={classes.group}>
                   <div className={classes.groupLabel}>{fm('public.form.group.org')}</div>
                   <div className={classes.twoUp}>
+                    <SelectField
+                      ctx={ctx}
+                      name="user_category" required label={fm('field.userCategory')}
+                      onChange={onPickCategory}
+                      options={[
+                        { value: USER_CATEGORY.TASAF_STAFF, label: fm(`userCategory.${USER_CATEGORY.TASAF_STAFF}`) },
+                        { value: USER_CATEGORY.PAA_STAFF, label: fm(`userCategory.${USER_CATEGORY.PAA_STAFF}`) },
+                        { value: USER_CATEGORY.OTHER, label: fm(`userCategory.${USER_CATEGORY.OTHER}`) },
+                      ]}
+                      placeholder={fm('public.ph.userCategory')}
+                      icon={<CategoryOutlined className={classes.inputIcon} />}
+                    />
+                    <SelectField
+                      ctx={ctx}
+                      name="section_group_id" required label={fm('field.section')}
+                      options={sectionOptions}
+                      disabled={!form.user_category}
+                      placeholder={fm('public.ph.section')}
+                      icon={<GroupOutlined className={classes.inputIcon} />}
+                    />
+                  </div>
+
+                  {isPaa && (
+                    <SelectField
+                      ctx={ctx}
+                      name="administrative_level" required label={fm('field.administrativeLevel')}
+                      onChange={onPickAdminLevel}
+                      options={[
+                        { value: ADMIN_LEVEL.PAA, label: fm(`adminLevel.${ADMIN_LEVEL.PAA}`) },
+                        { value: ADMIN_LEVEL.VILLAGE, label: fm(`adminLevel.${ADMIN_LEVEL.VILLAGE}`) },
+                      ]}
+                      placeholder={fm('public.ph.administrativeLevel')}
+                      icon={<LayersOutlined className={classes.inputIcon} />}
+                    />
+                  )}
+                </div>
+
+                {isPaa && !!locChain.length && (
+                  <div className={classes.group}>
+                    <div className={classes.groupLabel}>{fm('public.form.group.location')}</div>
+                    <div className={classes.twoUp}>
+                      {locChain.map((lvl, i) => (
+                        <SelectField
+                          key={lvl}
+                          ctx={ctx}
+                          name={lvl} required label={fm(`field.${lvl}`)}
+                          options={locOptions[lvl]}
+                          value={form[lvl]}
+                          onChange={onPickLocation(lvl)}
+                          disabled={i > 0 && !form[locChain[i - 1]]}
+                          icon={<PlaceOutlined className={classes.inputIcon} />}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isOther && (
+                  <div className={classes.group}>
+                    <div className={classes.groupLabel}>{fm('public.form.group.external')}</div>
                     <Field
-                    ctx={ctx}
-                      name="organization_paa" label={fm('field.organizationPaa')}
+                      ctx={ctx}
+                      name="organization_paa" required label={fm('field.organizationName')}
                       placeholder={fm('public.ph.org')}
                       icon={<BusinessOutlined className={classes.inputIcon} />}
                     />
                     <Field
-                    ctx={ctx}
-                      name="section" label={fm('field.section')}
-                      placeholder={fm('public.ph.section')}
-                      icon={<AccountTreeOutlined className={classes.inputIcon} />}
+                      ctx={ctx}
+                      name="designation" required label={fm('field.designation')}
+                      placeholder={fm('public.ph.designation')}
+                      icon={<WorkOutline className={classes.inputIcon} />}
                     />
                   </div>
-                  <Field
-                    ctx={ctx}
-                    name="designation" label={fm('field.designation')}
-                    placeholder={fm('public.ph.designation')}
-                    icon={<WorkOutline className={classes.inputIcon} />}
-                  />
-                </div>
+                )}
 
                 {/* honeypot — bots fill this; humans never see it */}
                 <input className={classes.hp} tabIndex={-1} autoComplete="off" value={form.hp} onChange={set('hp')} aria-hidden="true" />

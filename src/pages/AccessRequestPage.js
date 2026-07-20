@@ -1,6 +1,3 @@
-// Authenticated staff page — review one request: applicant details, approval status
-// (the Manager → ICT sign-off happens in the generic Approval Engine / Tasks inbox),
-// then provision the core user once the request reaches ICT_APPROVED.
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { makeStyles } from '@material-ui/styles';
@@ -36,13 +33,15 @@ function Field({ label, value }) {
   );
 }
 
-export default function AccessRequestPage({ match, rights = [] }) {
+export default function AccessRequestPage({ match }) {
   const classes = useStyles();
   const modulesManager = useModulesManager();
   const dispatch = useDispatch();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
   const id = match?.params?.access_request_id;
 
+  // fe-core does not pass `rights` to route components — read it from redux.
+  const rights = useSelector((s) => s.core?.user?.i_user?.rights ?? []);
   const request = useSelector((s) => s.access_request?.request);
   const mutation = useSelector((s) => s.access_request?.mutation);
   const submitting = useSelector((s) => s.access_request?.submittingMutation);
@@ -60,7 +59,7 @@ export default function AccessRequestPage({ match, rights = [] }) {
       if (id) dispatch(fetchAccessRequest(id));
     }
     setPrevSubmitting(submitting);
-  }, [submitting]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [submitting]);
 
   if (!request) return <div className={classes.page}><Typography>{formatMessage('loading')}</Typography></div>;
 
@@ -90,8 +89,16 @@ export default function AccessRequestPage({ match, rights = [] }) {
         <Grid container spacing={2}>
           <Field label={formatMessage('field.requestType')} value={formatMessage(`requestType.${request.requestType}`)} />
           <Field label={formatMessage('field.fullName')} value={request.fullName} />
-          <Field label={formatMessage('field.organizationPaa')} value={request.organizationPaa} />
+          <Field
+            label={formatMessage('field.userCategory')}
+            value={request.userCategory ? formatMessage(`userCategory.${request.userCategory}`) : null}
+          />
+          <Field
+            label={formatMessage('field.administrativeLevel')}
+            value={request.administrativeLevel ? formatMessage(`adminLevel.${request.administrativeLevel}`) : null}
+          />
           <Field label={formatMessage('field.section')} value={request.section} />
+          <Field label={formatMessage('field.organizationPaa')} value={request.organizationPaa} />
           <Field label={formatMessage('field.designation')} value={request.designation} />
           <Field label={formatMessage('field.email')} value={request.email} />
           <Field label={formatMessage('field.phone')} value={request.phone} />

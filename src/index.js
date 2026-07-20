@@ -11,6 +11,7 @@ import {
 } from './constants';
 
 import AccessRequestPublicPage from './pages/AccessRequestPublicPage';
+import AccessRequestStatusPage from './pages/AccessRequestStatusPage';
 import AccessRequestsPage from './pages/AccessRequestsPage';
 import AccessRequestPage from './pages/AccessRequestPage';
 
@@ -24,16 +25,15 @@ const DEFAULT_CONFIG = {
     { key: AR_ROUTE_REQUESTS, ref: ROUTE_REQUESTS },
     { key: AR_ROUTE_REQUEST, ref: ROUTE_REQUEST },
   ],
-  // Authenticated staff review/approval routes.
   'core.Router': [
     { path: ROUTE_REQUESTS, component: AccessRequestsPage },
     { path: `${ROUTE_REQUEST}/:access_request_id?`, component: AccessRequestPage },
   ],
-  // PUBLIC (no login) landing + application page.
   'core.UnauthenticatedRouter': [
     { path: 'account-request', component: AccessRequestPublicPage },
+    { path: 'application-status', component: AccessRequestStatusPage },
   ],
-  'core.MainMenu': [
+  'access_request.MainMenu': [
     {
       text: <FormattedMessage module="access_request" id="menu.requests" />,
       icon: <HowToReg />,
