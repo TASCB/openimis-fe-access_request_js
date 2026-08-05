@@ -88,6 +88,8 @@
 
   "access_request.public.optional": "optional",
 
+  "access_request.login.requestAccount": "Request Access",
+
   "access_request.public.topbar.portal": "Access request portal",
   "access_request.public.topbar.gov": "Tanzania Social Action Fund",
 

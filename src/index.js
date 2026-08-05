@@ -14,6 +14,7 @@ import AccessRequestPublicPage from './pages/AccessRequestPublicPage';
 import AccessRequestStatusPage from './pages/AccessRequestStatusPage';
 import AccessRequestsPage from './pages/AccessRequestsPage';
 import AccessRequestPage from './pages/AccessRequestPage';
+import LoginPageLink from './components/LoginPageLink';
 
 const ROUTE_REQUESTS = 'access-requests';
 const ROUTE_REQUEST = 'access-requests/request';
@@ -29,6 +30,7 @@ const DEFAULT_CONFIG = {
     { path: ROUTE_REQUESTS, component: AccessRequestsPage },
     { path: `${ROUTE_REQUEST}/:access_request_id?`, component: AccessRequestPage },
   ],
+  'core.LoginPage': [LoginPageLink],
   'core.UnauthenticatedRouter': [
     { path: 'account-request', component: AccessRequestPublicPage },
     { path: 'application-status', component: AccessRequestStatusPage },
