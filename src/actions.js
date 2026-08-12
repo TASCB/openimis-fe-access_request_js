@@ -50,3 +50,11 @@ export function provisionAccessRequest(requestId, username, roleIds, districtIds
   return graphql(mutation.payload, ['ACCESS_REQUEST_MUTATION_REQ', 'ACCESS_REQUEST_MUTATION_RESP', 'ACCESS_REQUEST_MUTATION_ERR'],
     { clientMutationId: mutation.clientMutationId, clientMutationLabel });
 }
+
+
+// Core roles offered in the provisioning picker. `node.id` is a relay global id; the
+// provision mutation takes the integer Role id, so callers decodeId() before sending.
+export function fetchAssignableRoles() {
+  const payload = `query { role(first: 200, orderBy: ["name"]) { totalCount edges { node { id name isSystem isBlocked } } } }`;
+  return graphql(payload, ACTION_TYPE.SEARCH_ROLES);
+}

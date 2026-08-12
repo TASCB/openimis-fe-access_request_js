@@ -7,6 +7,7 @@ import {
 import {
   useModulesManager, useTranslations, journalize,
 } from '@openimis/fe-core';
+import RolePicker from '../components/RolePicker';
 import {
   fetchAccessRequest, provisionAccessRequest,
 } from '../actions';
@@ -47,7 +48,7 @@ export default function AccessRequestPage({ match }) {
   const submitting = useSelector((s) => s.access_request?.submittingMutation);
 
   const [username, setUsername] = useState('');
-  const [roleIds, setRoleIds] = useState('');
+  const [roleIds, setRoleIds] = useState([]);
   const [prevSubmitting, setPrevSubmitting] = useState(false);
 
   useEffect(() => { if (id) dispatch(fetchAccessRequest(id)); }, [id, dispatch]);
@@ -67,7 +68,7 @@ export default function AccessRequestPage({ match }) {
   const canIct = rights.includes(RIGHT_ICT_APPROVE);
 
   const doProvision = () => dispatch(provisionAccessRequest(
-    id, username, roleIds.split(',').map((x) => parseInt(x.trim(), 10)).filter(Boolean), null, label('provision'),
+    id, username, roleIds, null, label('provision'),
   ));
 
   const s = request.status;
@@ -129,12 +130,12 @@ export default function AccessRequestPage({ match }) {
               />
             </Grid>
             <Grid item xs={12} sm={8}>
-              <TextField
-                fullWidth
-                label={formatMessage('field.roleIds')}
-                helperText={formatMessage('field.roleIds.help')}
+              <RolePicker
+                required
+                label={formatMessage('field.roles')}
+                helperText={formatMessage('field.roles.help')}
                 value={roleIds}
-                onChange={(e) => setRoleIds(e.target.value)}
+                onChange={setRoleIds}
               />
             </Grid>
           </Grid>
@@ -142,7 +143,7 @@ export default function AccessRequestPage({ match }) {
             <Button
               variant="contained"
               color="primary"
-              disabled={submitting || !username || !roleIds}
+              disabled={submitting || !username || !roleIds.length}
               onClick={doProvision}
             >
               {formatMessage('action.provision')}

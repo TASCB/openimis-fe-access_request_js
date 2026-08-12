@@ -1,7 +1,6 @@
 {
   "access_request.menu.requests": "Access Requests",
   "access_request.loading": "Loading…",
-
   "access_request.requests.title": "User Account Access Requests",
   "access_request.requests.empty": "No access requests found.",
   "access_request.request.title": "Access Request",
@@ -10,7 +9,6 @@
   "access_request.request.approvals.engineNote": "The Manager → ICT sign-off is handled in the Approval Engine. Approvers act on this request from their Tasks inbox; this page shows the outcome and lets ICT provision the account once approved.",
   "access_request.request.provision": "Provision Account",
   "access_request.request.provisioned": "Account provisioned — username",
-
   "access_request.field.referenceCode": "Reference",
   "access_request.field.requestType": "Request Type",
   "access_request.field.fullName": "Full Name",
@@ -33,25 +31,21 @@
   "access_request.field.comment": "Comment / Reason",
   "access_request.field.username": "Username",
   "access_request.field.username.help": "Max 8 characters (tasafMIS login).",
-  "access_request.field.roleIds": "Confirmed Role ID(s)",
-  "access_request.field.roleIds.help": "Comma-separated core Role ids to grant.",
-
+  "access_request.field.roles": "Roles to assign",
+  "access_request.field.roles.help": "Roles granted to the new user. Adjust before provisioning — the same person should not hold both maker and approver roles.",
   "access_request.requestType.NEW": "New user Creation",
   "access_request.requestType.ACTIVATE": "Activation of Existing user",
-
   "access_request.userCategory.TASAF_STAFF": "TASAF Staff",
   "access_request.userCategory.PAA_STAFF": "PAA Staff",
   "access_request.userCategory.OTHER": "Other",
   "access_request.adminLevel.PAA": "PAA",
   "access_request.adminLevel.VILLAGE": "Village",
-
   "access_request.status.SUBMITTED": "Submitted",
   "access_request.status.MANAGER_APPROVED": "Manager Approved",
   "access_request.status.ICT_APPROVED": "ICT Approved",
   "access_request.status.PROVISIONED": "Provisioned",
   "access_request.status.REJECTED": "Rejected",
   "access_request.status.FAILED": "Provisioning Failed",
-
   "access_request.field.dateCreated": "Submitted On",
   "access_request.emptyLabel": " ",
   "access_request.searcherResultsTitle": "{count} access request(s)",
@@ -70,29 +64,22 @@
   "access_request.field.userCategory.TASAF_STAFF": "TASAF Staff",
   "access_request.field.userCategory.PAA_STAFF": "PAA Staff",
   "access_request.field.userCategory.OTHER": "Other",
-
   "access_request.approvalLevel.MANAGER": "Department / Line Manager",
   "access_request.approvalLevel.ICT": "ICT Department",
   "access_request.decision.PENDING": "Pending",
   "access_request.decision.APPROVED": "Approved",
   "access_request.decision.REJECTED": "Rejected",
-
   "access_request.action.managerApprove": "Approve (Manager)",
   "access_request.action.ictApprove": "Approve (ICT)",
   "access_request.action.reject": "Reject",
   "access_request.action.provision": "Create / Activate Account",
-
   "access_request.mutation.manager": "Manager decision on access request",
   "access_request.mutation.ict": "ICT decision on access request",
   "access_request.mutation.provision": "Provision account from access request",
-
   "access_request.public.optional": "optional",
-
   "access_request.login.requestAccount": "Request Access",
-
   "access_request.public.topbar.portal": "Access request portal",
   "access_request.public.topbar.gov": "Tanzania Social Action Fund",
-
   "access_request.public.hero.line1": "Create your",
   "access_request.public.hero.brand": "TASAF MIS",
   "access_request.public.hero.line2": "account",
@@ -100,7 +87,6 @@
   "access_request.public.hero.start": "Start application",
   "access_request.public.hero.learnMore": "Learn how it works",
   "access_request.public.hero.checkStatus": "Application status",
-
   "access_request.public.process.eyebrow": "The process",
   "access_request.public.process.title": "How your request is handled",
   "access_request.public.process.subtitle": "A transparent, three-stage approval flow — designed to be quick without cutting corners on security.",
@@ -110,7 +96,6 @@
   "access_request.public.step2.body": "Your manager and the ICT department review your request and sign off on access.",
   "access_request.public.step3.title": "Account ready",
   "access_request.public.step3.body": "Your username is approved and a secure set-password link is emailed to you for your first sign-in.",
-
   "access_request.public.form.title": "Account application",
   "access_request.public.form.requiredNote": "Fields marked with * are required.",
   "access_request.public.form.group.details": "Your details",
@@ -120,7 +105,6 @@
   "access_request.public.select.placeholder": "— select —",
   "access_request.public.segmented.new": "New user",
   "access_request.public.segmented.activate": "Activate existing",
-
   "access_request.public.ph.fullName": "e.g. Babdula Satoki Mwenyekheri",
   "access_request.public.ph.email": "babdula@tasaf.go.tz",
   "access_request.public.ph.phone": "+255 7XX XXX XXX",
@@ -129,7 +113,6 @@
   "access_request.public.ph.userCategory": "— select a category —",
   "access_request.public.ph.administrativeLevel": "— select a level —",
   "access_request.public.ph.designation": "e.g. MIS Officer",
-
   "access_request.public.form.submit.new": "Submit application",
   "access_request.public.form.submit.activate": "Activate account",
   "access_request.public.form.submit.sending": "Sending…",
@@ -147,7 +130,6 @@
   "access_request.public.form.successTitle": "Request received",
   "access_request.public.form.successBody": "Keep this reference to check your status. You'll be notified by email once your account is approved.",
   "access_request.public.form.checkStatus": "Check application status",
-
   "access_request.public.track.hero.line1": "Track your",
   "access_request.public.track.hero.brand": "TASAF MIS",
   "access_request.public.track.hero.line2": "application",
@@ -173,7 +155,6 @@
   "access_request.public.track.err.required": "Please enter your reference code.",
   "access_request.public.track.err.notFound": "We couldn't find an application with that reference code. Please check and try again.",
   "access_request.public.track.err.generic": "Sorry, we couldn't check the status right now. Please try again.",
-
   "access_request.public.footer.copy": "Tanzania Social Action Fund (TASAF). MIS access requests.",
   "access_request.public.footer.help": "Need help?",
   "access_request.public.footer.helpLink": "Contact ICT support",

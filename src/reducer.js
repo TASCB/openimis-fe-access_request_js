@@ -18,6 +18,7 @@ export const ACTION_TYPE = {
   GET_REQUEST: 'ACCESS_REQUEST_REQUEST',
   SEARCH_APPROVALS: 'ACCESS_REQUEST_APPROVALS',
   SEARCH_PROFILES: 'ACCESS_REQUEST_PROFILES',
+  SEARCH_ROLES: 'ACCESS_REQUEST_ROLES',
 };
 
 const STORE_STATE = {
@@ -32,6 +33,9 @@ const STORE_STATE = {
   fetchingRequest: false,
   request: null,
   errorRequest: null,
+  fetchingRoles: false,
+  roles: [],
+  errorRoles: null,
   fetchingProfiles: false,
   profiles: [],
   profilesPageInfo: {},
@@ -44,6 +48,17 @@ function reducer(state = STORE_STATE, action) {
       return {
         ...state, fetchingRequests: true, fetchedRequests: false, requests: [], errorRequests: null,
       };
+    case REQUEST(ACTION_TYPE.SEARCH_ROLES):
+      return { ...state, fetchingRoles: true, errorRoles: null };
+    case SUCCESS(ACTION_TYPE.SEARCH_ROLES):
+      return {
+        ...state,
+        fetchingRoles: false,
+        roles: parseData(action.payload.data.role) || [],
+        errorRoles: formatGraphQLError(action.payload),
+      };
+    case ERROR(ACTION_TYPE.SEARCH_ROLES):
+      return { ...state, fetchingRoles: false, errorRoles: formatServerError(action.payload) };
     case SUCCESS(ACTION_TYPE.SEARCH_REQUESTS):
       return {
         ...state,
