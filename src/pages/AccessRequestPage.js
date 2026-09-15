@@ -13,7 +13,7 @@ import {
 } from '../actions';
 import {
   MODULE_NAME, RIGHT_ICT_APPROVE,
-  REQUEST_STATUS, STATUS_COLOR,
+  REQUEST_STATUS, STATUS_CHIP_COLOR,
 } from '../constants';
 
 const useStyles = makeStyles((theme) => ({
@@ -81,7 +81,7 @@ export default function AccessRequestPage({ match }) {
         <Chip
           size="small"
           label={formatMessage(`status.${s}`)}
-          style={{ background: STATUS_COLOR[s] || '#607d8b', color: '#fff', marginLeft: 8 }}
+          style={{ background: STATUS_CHIP_COLOR, color: '#fff', marginLeft: 8 }}
         />
       </Typography>
 
