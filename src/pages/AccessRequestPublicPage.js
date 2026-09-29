@@ -207,9 +207,15 @@ const useStyles = makeStyles({
 });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Tanzanian numbers: 9 national digits after 0 / 255 — mobile 6x/7x, landline 2x.
+// Same rule as the backend's normalize_phone.
+const PHONE_RE = /^(?:\+?255|0)?[267]\d{8}$/;
+const MAX_LEN = {
+  full_name: 255, email: 254, email_confirm: 254, phone: 20, organization_paa: 255, designation: 255,
+};
 
 function Field({
-  ctx, name, label, required, icon, type = 'text', placeholder,
+  ctx, name, label, required, icon, type = 'text', placeholder, autoComplete,
 }) {
   const {
     classes, fm, form, errors, set,
@@ -230,6 +236,8 @@ function Field({
           value={form[name]}
           onChange={set(name)}
           placeholder={placeholder}
+          maxLength={MAX_LEN[name]}
+          autoComplete={autoComplete}
           aria-label={label}
           aria-invalid={!!errors[name]}
         />
@@ -284,7 +292,7 @@ export default function AccessRequestPublicPage() {
   const fm = (id) => formatMessage(id);
 
   const [form, setForm] = useState({
-    request_type: REQUEST_TYPE.NEW, full_name: '', email: '', phone: '',
+    request_type: REQUEST_TYPE.NEW, full_name: '', email: '', email_confirm: '', phone: '',
     organization_paa: '', section_group_id: '', designation: '', hp: '',
     user_category: '', administrative_level: '',
     region: '', district: '', ward: '', village: '',
@@ -385,6 +393,12 @@ export default function AccessRequestPublicPage() {
     if (!form.full_name.trim()) errs.full_name = fm('public.form.err.fullNameRequired');
     if (!form.email.trim()) errs.email = fm('public.form.err.emailRequired');
     else if (!EMAIL_RE.test(form.email.trim())) errs.email = fm('public.form.err.emailInvalid');
+    else if (form.email.trim().toLowerCase() !== form.email_confirm.trim().toLowerCase()) {
+      errs.email_confirm = fm('public.form.err.emailMismatch');
+    }
+    if (form.phone.trim() && !PHONE_RE.test(form.phone.replace(/[\s\-().]/g, ''))) {
+      errs.phone = fm('public.form.err.phoneInvalid');
+    }
     if (!form.section_group_id) errs.section_group_id = fm('public.form.err.sectionRequired');
     if (!form.user_category) errs.user_category = fm('public.form.err.categoryRequired');
 
@@ -427,8 +441,26 @@ export default function AccessRequestPublicPage() {
     })
       .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
-        if (ok && d.ok) { setReference(d.reference_code); setState('done'); }
-        else { setSubmitError(fm('public.form.failed')); setState('idle'); }
+        if (ok && d.ok) { setReference(d.reference_code); setState('done'); return; }
+        setState('idle');
+        if (d.error === 'rate_limited') { setSubmitError(fm('public.form.err.rateLimited')); return; }
+        // Show server-side rejections on the field they belong to.
+        const fieldErrs = {};
+        if (d.error === 'missing_fields') {
+          const formName = { section: 'section_group_id', location: locChain[locChain.length - 1] };
+          (d.fields || []).forEach((f) => { fieldErrs[formName[f] || f] = fm('public.form.err.required'); });
+        } else if (d.error === 'invalid_fields' || d.error === 'duplicate_request') {
+          Object.entries(d.fields || {}).forEach(([f, code]) => {
+            fieldErrs[f] = fm(`public.form.err.server.${f}.${code}`);
+          });
+        }
+        if (Object.keys(fieldErrs).length) {
+          setErrors((prev) => ({ ...prev, ...fieldErrs }));
+          setSubmitError(fm(d.error === 'duplicate_request'
+            ? 'public.form.err.server.email.duplicate' : 'public.form.err.fixFields'));
+        } else {
+          setSubmitError(fm('public.form.failed'));
+        }
       })
       .catch(() => { setSubmitError(fm('public.form.failed')); setState('idle'); });
   };
@@ -550,18 +582,27 @@ export default function AccessRequestPublicPage() {
                   />
                   <div className={classes.twoUp}>
                     <Field
-                    ctx={ctx}
+                      ctx={ctx}
                       name="email" required type="email" label={fm('field.email')}
                       placeholder={fm('public.ph.email')}
+                      autoComplete="email"
                       icon={<MailOutline className={classes.inputIcon} />}
                     />
                     <Field
-                    ctx={ctx}
-                      name="phone" label={fm('field.phone')}
-                      placeholder={fm('public.ph.phone')}
-                      icon={<PhoneOutlined className={classes.inputIcon} />}
+                      ctx={ctx}
+                      name="email_confirm" required type="email" label={fm('field.emailConfirm')}
+                      placeholder={fm('public.ph.emailConfirm')}
+                      autoComplete="off"
+                      icon={<MailOutline className={classes.inputIcon} />}
                     />
                   </div>
+                  <Field
+                    ctx={ctx}
+                    name="phone" type="tel" label={fm('field.phone')}
+                    placeholder={fm('public.ph.phone')}
+                    autoComplete="tel"
+                    icon={<PhoneOutlined className={classes.inputIcon} />}
+                  />
                 </div>
 
                 <div className={classes.group}>

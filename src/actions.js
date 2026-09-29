@@ -14,7 +14,10 @@ const REQUEST_PROJECTION = () => [
 
 const REQUEST_FULL_PROJECTION = () => [
   ...REQUEST_PROJECTION(),
-  'applicantSignature', 'provisioningError',
+  'applicantSignature', 'provisioningError', 'existingUserLogins',
+  'approval { uuid status currentStepOrder requestedAt completedAt entityModel objectId flow { code name } '
+    + 'steps { uuid order code label status requiredRight assignedRoleId dateCreated '
+    + 'decisions { uuid decision comment decidedAt approver { username otherNames lastName } } } }',
   
 ];
 
@@ -54,7 +57,31 @@ export function provisionAccessRequest(requestId, username, roleIds, districtIds
 
 // Core roles offered in the provisioning picker. `node.id` is a relay global id; the
 // provision mutation takes the integer Role id, so callers decodeId() before sending.
+// 100 is the server's page cap; asking for more fails the whole query and empties the picker.
 export function fetchAssignableRoles() {
-  const payload = `query { role(first: 200, orderBy: ["name"]) { totalCount edges { node { id name isSystem isBlocked } } } }`;
+  const payload = `query { role(first: 100, orderBy: ["name"]) { totalCount edges { node { id name isSystem isBlocked } } } }`;
   return graphql(payload, ACTION_TYPE.SEARCH_ROLES);
 }
+
+// Approval Engine decisions on the application's current step. They reuse this module's
+// mutation action types so the page's submit → journalize → refetch cycle covers them too.
+function approvalStepMutation(name, requestUuid, stepUuid, comment, clientMutationLabel) {
+  const mutation = formatMutation(name, `
+    requestId: "${requestUuid}"
+    stepId: "${stepUuid}"
+    ${comment ? `comment: "${formatGQLString(comment)}"` : ''}
+  `, clientMutationLabel);
+  return graphql(
+    mutation.payload,
+    ['ACCESS_REQUEST_MUTATION_REQ', 'ACCESS_REQUEST_MUTATION_RESP', 'ACCESS_REQUEST_MUTATION_ERR'],
+    { clientMutationId: mutation.clientMutationId, clientMutationLabel },
+  );
+}
+
+export const approveAccessRequestStep = (requestUuid, stepUuid, comment, label) => approvalStepMutation(
+  'approveApprovalStep', requestUuid, stepUuid, comment, label,
+);
+
+export const rejectAccessRequestStep = (requestUuid, stepUuid, comment, label) => approvalStepMutation(
+  'rejectApprovalStep', requestUuid, stepUuid, comment, label,
+);
