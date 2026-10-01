@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Chip, Typography } from '@material-ui/core';
+import { Button, Chip, Typography } from '@material-ui/core';
+import { historyPush, useHistory } from '@openimis/fe-core';
 import { makeStyles } from '@material-ui/core/styles';
 import Check from '@material-ui/icons/Check';
 import Close from '@material-ui/icons/Close';
@@ -53,9 +54,12 @@ const STEP_CHIP = {
   PENDING: 'request.chain.awaiting', APPROVED: 'request.chain.approved', REJECTED: 'request.chain.rejected', RETURNED: 'request.chain.returned',
 };
 
-export default function ApprovalChainCard({ request, detailed = false }) {
+export default function ApprovalChainCard({ request }) {
   const classes = useStyles();
-  const { formatMessage, formatMessageWithValues, formatDateTimeFromISO } = useAR();
+  const {
+    modulesManager, formatMessage, formatMessageWithValues, formatDateTimeFromISO,
+  } = useAR();
+  const history = useHistory();
   const roles = useSelector((s) => s.access_request?.roles ?? []);
   const { approval } = request;
   const steps = approval?.steps || [];
@@ -91,8 +95,9 @@ export default function ApprovalChainCard({ request, detailed = false }) {
       {steps.map((s) => {
         const state = stepState(s);
         const decisions = s.decisions || [];
-        const last = decisions[decisions.length - 1];
-        const role = roleName(s.assignedRoleId);
+        const role = s.assignedGroupName
+          ? formatMessageWithValues('request.chain.sectionManagers', { section: s.assignedGroupName })
+          : roleName(s.assignedRoleId);
         let dotClass = '';
         if (state === 'active') dotClass = classes.dotActive;
         else if (state === 'done') dotClass = classes.dotDone;
@@ -104,9 +109,9 @@ export default function ApprovalChainCard({ request, detailed = false }) {
           });
         } else if (state === 'waiting') {
           line = formatMessage(s.order === 1 ? 'request.chain.notStarted' : 'request.chain.unlocksAfter');
-        } else if (last) {
-          line = `${personName(last.approver)} · ${last.decidedAt ? formatDateTimeFromISO(last.decidedAt) : ''}`;
         }
+        const summary = [role && formatMessageWithValues('request.chain.assignedTo', { role }), line]
+          .filter(Boolean).join(' · ');
         return (
           <div key={s.uuid} className={classes.step}>
             <span className={classes.rail} />
@@ -125,12 +130,8 @@ export default function ApprovalChainCard({ request, detailed = false }) {
                   label={formatMessage(state === 'waiting' ? 'request.chain.notStartedChip' : STEP_CHIP[s.status])}
                 />
               </div>
-              <div className={classes.muted}>
-                {role ? `${formatMessageWithValues('request.chain.assignedTo', { role })} · ` : ''}
-                {line}
-              </div>
-              {!detailed && !!last?.comment && <div className={classes.decision}><div className={classes.comment}>{last.comment}</div></div>}
-              {detailed && decisions.map(renderDecision)}
+              {!!summary && <div className={classes.muted}>{summary}</div>}
+              {decisions.map(renderDecision)}
             </div>
           </div>
         );
@@ -143,6 +144,15 @@ export default function ApprovalChainCard({ request, detailed = false }) {
           <div>
             <div className={classes.head}>
               <span className={classes.label}>{formatMessage('request.chain.provisioned')}</span>
+              {provisioned && !!request.createdUser?.id && (
+                <Button
+                  size="small"
+                  color="primary"
+                  onClick={() => historyPush(modulesManager, history, 'admin.userOverview', [request.createdUser.id])}
+                >
+                  {formatMessage('provisioned.openUser')}
+                </Button>
+              )}
             </div>
             <div className={classes.muted}>
               {provisioned

@@ -2,7 +2,6 @@
 import {
   dispatchMutationErr,
   dispatchMutationReq,
-  dispatchMutationResp,
   formatGraphQLError,
   formatServerError,
   pageInfo,
@@ -19,6 +18,8 @@ export const ACTION_TYPE = {
   SEARCH_APPROVALS: 'ACCESS_REQUEST_APPROVALS',
   SEARCH_PROFILES: 'ACCESS_REQUEST_PROFILES',
   SEARCH_ROLES: 'ACCESS_REQUEST_ROLES',
+  SEARCH_SECTIONS: 'ACCESS_REQUEST_SECTIONS',
+  TEMP_PASSWORD: 'ACCESS_REQUEST_TEMP_PASSWORD',
 };
 
 const STORE_STATE = {
@@ -36,6 +37,11 @@ const STORE_STATE = {
   fetchingRoles: false,
   roles: [],
   errorRoles: null,
+  temporaryPassword: null,
+  fetchedTemporaryPassword: false,
+  fetchingSections: false,
+  sections: [],
+  errorSections: null,
   fetchingProfiles: false,
   profiles: [],
   profilesPageInfo: {},
@@ -59,6 +65,29 @@ function reducer(state = STORE_STATE, action) {
       };
     case ERROR(ACTION_TYPE.SEARCH_ROLES):
       return { ...state, fetchingRoles: false, errorRoles: formatServerError(action.payload) };
+    case REQUEST(ACTION_TYPE.TEMP_PASSWORD):
+      return { ...state, temporaryPassword: null, fetchedTemporaryPassword: false };
+    case SUCCESS(ACTION_TYPE.TEMP_PASSWORD):
+      return {
+        ...state,
+        temporaryPassword: action.payload.data?.accessRequestTemporaryPassword || null,
+        fetchedTemporaryPassword: true,
+      };
+    case ERROR(ACTION_TYPE.TEMP_PASSWORD):
+      return { ...state, temporaryPassword: null, fetchedTemporaryPassword: true };
+    case `${ACTION_TYPE.TEMP_PASSWORD}_CLEAR`:
+      return { ...state, temporaryPassword: null, fetchedTemporaryPassword: false };
+    case REQUEST(ACTION_TYPE.SEARCH_SECTIONS):
+      return { ...state, fetchingSections: true, errorSections: null };
+    case SUCCESS(ACTION_TYPE.SEARCH_SECTIONS):
+      return {
+        ...state,
+        fetchingSections: false,
+        sections: action.payload.data?.accessSections || [],
+        errorSections: formatGraphQLError(action.payload),
+      };
+    case ERROR(ACTION_TYPE.SEARCH_SECTIONS):
+      return { ...state, fetchingSections: false, errorSections: formatServerError(action.payload) };
     case SUCCESS(ACTION_TYPE.SEARCH_REQUESTS):
       return {
         ...state,
@@ -104,7 +133,7 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.MUTATION):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.MUTATION):
-      return dispatchMutationResp(state, action.meta.clientMutationId, action);
+      return { ...state, submittingMutation: false, mutation: { ...state.mutation, log: action.payload } };
     case CLEAR(ACTION_TYPE.MUTATION):
       return { ...state, mutation: {} };
     default:

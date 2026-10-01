@@ -52,9 +52,16 @@ export default function HistoryCard({ request }) {
       ))}
       {request.status === REQUEST_STATUS.PROVISIONED && (
         <div className={classes.row}>
-          <span className={classes.when}>—</span>
-          <div className={classes.what}>
-            {formatMessageWithValues('request.chain.provisionedDone', { username: request.assignedUsername || '' })}
+          <span className={classes.when}>{request.dateUpdated ? formatDateTimeFromISO(request.dateUpdated) : '—'}</span>
+          <div>
+            <div className={classes.what}>
+              {formatMessageWithValues('request.chain.provisionedDone', { username: request.assignedUsername || '' })}
+            </div>
+            {!!request.userUpdated && (
+              <Typography variant="body2">
+                {personName({ username: request.userUpdated.username, ...request.userUpdated.iUser })}
+              </Typography>
+            )}
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import {
-  Helmet, ProgressOrError, historyPush, journalize, useHistory,
+  Helmet, ProgressOrError, decodeId, historyPush, journalize, useHistory,
 } from '@openimis/fe-core';
 import RequestHeader from '../components/request/RequestHeader';
 import RequestDetailsCard from '../components/request/RequestDetailsCard';
@@ -11,12 +11,14 @@ import ApprovalChainCard from '../components/request/ApprovalChainCard';
 import DecisionNoteCard from '../components/request/DecisionNoteCard';
 import ProvisionCard from '../components/request/ProvisionCard';
 import HistoryCard from '../components/request/HistoryCard';
+import ProvisionedDialog from '../components/request/ProvisionedDialog';
 import {
   ApplicantCard, ChecklistCard,
 } from '../components/request/SideCards';
 import { canDecide, currentStep, useAR } from '../components/request/common';
 import {
-  approveAccessRequestStep, fetchAccessRequest, provisionAccessRequest, rejectAccessRequestStep,
+  approveAccessRequestStep, clearTemporaryPassword, fetchAccessRequest, fetchTemporaryPassword,
+  provisionAccessRequest, rejectAccessRequestStep,
 } from '../actions';
 import {
   RIGHT_ICT_APPROVE, RIGHT_REQUEST_SEARCH, RIGHT_REQUEST_VIEW, REQUEST_STATUS, AR_ROUTE_REQUESTS,
@@ -33,6 +35,12 @@ const writeDraft = (id, v) => {
   } catch (e) { /* storage unavailable — the note simply isn't kept */ }
 };
 
+const districtOf = (location) => {
+  let node = location;
+  while (node && node.type !== 'D') node = node.parent;
+  return node || null;
+};
+
 export default function AccessRequestPage({ match }) {
   const classes = useStyles();
   const history = useHistory();
@@ -47,16 +55,28 @@ export default function AccessRequestPage({ match }) {
   const errorRequest = useSelector((s) => s.access_request?.errorRequest);
   const mutation = useSelector((s) => s.access_request?.mutation);
   const submitting = useSelector((s) => s.access_request?.submittingMutation);
+  const temporaryPassword = useSelector((s) => s.access_request?.temporaryPassword);
 
   const [tab, setTab] = useState('overview');
   const [note, setNote] = useState(() => readDraft(id));
   const [noteError, setNoteError] = useState(null);
   const [username, setUsername] = useState('');
   const [roleIds, setRoleIds] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [showProvisioned, setShowProvisioned] = useState(false);
   const prevSubmitting = useRef(false);
   const clearNoteOnDone = useRef(false);
+  const provisioning = useRef(false);
+  const districtsInitFor = useRef(null);
 
   useEffect(() => { if (id) dispatch(fetchAccessRequest(id)); }, [id, dispatch]);
+
+  useEffect(() => {
+    if (!request || districtsInitFor.current === request.id) return;
+    districtsInitFor.current = request.id;
+    const district = districtOf(request.requestedLocation);
+    setDistricts(district ? [district] : []);
+  }, [request]);
 
   // refresh after a mutation resolves
   useEffect(() => {
@@ -68,6 +88,11 @@ export default function AccessRequestPage({ match }) {
         clearNoteOnDone.current = false;
       }
       if (id) dispatch(fetchAccessRequest(id));
+      if (provisioning.current) {
+        provisioning.current = false;
+        if (id) dispatch(fetchTemporaryPassword(id));
+        setShowProvisioned(true);
+      }
     }
     prevSubmitting.current = submitting;
   }, [submitting]);
@@ -108,9 +133,15 @@ export default function AccessRequestPage({ match }) {
     clearNoteOnDone.current = true;
     dispatch(rejectAccessRequestStep(approval.uuid, step.uuid, note.trim(), label('request.mutation.reject')));
   };
-  const provision = () => dispatch(provisionAccessRequest(
-    id, username.trim(), roleIds, null, label('mutation.provision'),
-  ));
+  const provision = () => {
+    provisioning.current = true;
+    const districtIds = districts.map((d) => decodeId(d.id));
+    dispatch(provisionAccessRequest(id, username.trim(), roleIds, districtIds, label('mutation.provision')));
+  };
+  const closeProvisioned = () => {
+    setShowProvisioned(false);
+    dispatch(clearTemporaryPassword());
+  };
 
   return (
     <div className={classes.page}>
@@ -122,34 +153,53 @@ export default function AccessRequestPage({ match }) {
         tab={tab}
         onTab={setTab}
         onBack={back}
-        canDecide={decide}
-        onApprove={approve}
-        onReject={reject}
         canProvision={canProvision}
-        provisionReady={!!username.trim() && roleIds.length > 0}
-        onProvision={provision}
-        submitting={submitting}
       />
       <Grid container spacing={2}>
         <Grid item xs={12} md={8}>
-          {tab === 'overview' && (
-            <>
-              <RequestDetailsCard request={request} />
-              <ApprovalChainCard request={request} />
-              {canProvision && (
-                <ProvisionCard username={username} onUsername={setUsername} roleIds={roleIds} onRoleIds={setRoleIds} />
-              )}
-              {decide && <DecisionNoteCard value={note} onChange={changeNote} error={noteError} />}
-            </>
-          )}
-          {tab === 'approvals' && <ApprovalChainCard request={request} detailed />}
-          {tab === 'history' && <HistoryCard request={request} />}
+          <div hidden={tab !== 'overview'}>
+            <RequestDetailsCard request={request} />
+            <ApprovalChainCard request={request} />
+            {canProvision && (
+              <ProvisionCard
+                username={username}
+                onUsername={setUsername}
+                roleIds={roleIds}
+                onRoleIds={setRoleIds}
+                districts={districts}
+                onDistricts={setDistricts}
+                requestType={request.requestType}
+                onProvision={provision}
+                submitting={submitting}
+              />
+            )}
+            {decide && (
+              <DecisionNoteCard
+                value={note}
+                onChange={changeNote}
+                error={noteError}
+                onApprove={approve}
+                onReject={reject}
+                submitting={submitting}
+              />
+            )}
+          </div>
+          <div hidden={tab !== 'history'}>
+            <HistoryCard request={request} />
+          </div>
         </Grid>
         <Grid item xs={12} md={4}>
-          <ChecklistCard request={request} />
           <ApplicantCard request={request} />
+          <ChecklistCard request={request} />
         </Grid>
       </Grid>
+      <ProvisionedDialog
+        open={showProvisioned && request.status === REQUEST_STATUS.PROVISIONED}
+        username={request.assignedUsername}
+        password={temporaryPassword}
+        userId={request.createdUser?.id}
+        onClose={closeProvisioned}
+      />
     </div>
   );
 }

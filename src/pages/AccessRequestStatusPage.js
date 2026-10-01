@@ -47,7 +47,17 @@ const useStyles = makeStyles({
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
     padding: '10px 24px', background: T.white, borderBottom: `1px solid ${T.border}`,
   },
-  brandRow: { display: 'flex', alignItems: 'center', gap: 12 },
+  brandRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: 'none',
+    border: 0,
+    padding: 0,
+    font: 'inherit',
+    textAlign: 'left',
+    cursor: 'pointer',
+  },
   logo: { height: 34, width: 'auto', display: 'block' },
   wordmark: { fontFamily: T.head, fontWeight: 800, fontSize: 16, letterSpacing: 0.4, color: T.forest },
   wordmarkSub: { color: T.muted, fontWeight: 600, fontSize: 12, marginLeft: 8, letterSpacing: 0.3 },
@@ -174,13 +184,19 @@ export default function AccessRequestStatusPage() {
   return (
     <div className={`ar-public ${classes.page}`}>
       <div className={classes.topbar}>
-        <div className={classes.brandRow}>
+        <button
+          type="button"
+          className={classes.brandRow}
+          title={fm('public.topbar.home')}
+          aria-label={fm('public.topbar.home')}
+          onClick={() => history.push('/login')}
+        >
           <img className={classes.logo} src={LOGO} alt="TASAF" onError={(e) => { e.target.style.display = 'none'; }} />
           <span>
             <span className={classes.wordmark}>TASAF MIS</span>
             <span className={classes.wordmarkSub}>{fm('public.topbar.portal')}</span>
           </span>
-        </div>
+        </button>
         <span className={classes.topbarRight}>{fm('public.topbar.gov')}</span>
       </div>
 
