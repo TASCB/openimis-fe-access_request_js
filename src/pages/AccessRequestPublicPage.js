@@ -78,12 +78,21 @@ const useStyles = makeStyles({
     position: 'relative', overflow: 'hidden', color: T.white,
     background: `radial-gradient(1200px 400px at 78% -10%, rgba(122,208,194,.14), transparent 60%), linear-gradient(155deg, ${T.forest} 0%, #015043 60%, ${T.primary} 100%)`,
     padding: '56px 24px 64px',
+    '@media (max-width: 900px)': { padding: '22px 18px 26px' },
   },
   heroInner: { maxWidth: 1120, margin: '0 auto' },
-  h1: { fontSize: 46, lineHeight: 1.06, fontWeight: 800, margin: '0 0 14px', maxWidth: 640, letterSpacing: -0.5 },
+  h1: {
+    fontSize: 46, lineHeight: 1.06, fontWeight: 800, margin: '0 0 14px', maxWidth: 640, letterSpacing: -0.5,
+    '@media (max-width: 900px)': { fontSize: 26, margin: '0 0 6px' },
+  },
   h1accent: { color: T.accent },
-  heroSub: { fontSize: 17, lineHeight: 1.55, color: '#d7e6dd', maxWidth: 560, margin: 0 },
-  ctaRow: { display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' },
+  heroSub: {
+    fontSize: 17, lineHeight: 1.55, color: '#d7e6dd', maxWidth: 560, margin: 0,
+    '@media (max-width: 900px)': { fontSize: 14 },
+  },
+  ctaRow: {
+    display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap', '@media (max-width: 900px)': { marginTop: 16 },
+  },
 
   btnPrimary: {
     display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer',
