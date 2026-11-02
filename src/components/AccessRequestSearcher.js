@@ -8,6 +8,7 @@ import VisibilityIcon from '@material-ui/icons/Visibility';
 import {
   Searcher, useHistory, useModulesManager, useTranslations, journalize, formatDateFromISO, decodeId,
 } from '@openimis/fe-core';
+import { toDisplayTime } from '@openimis/fe-tasaf_common';
 import { fetchAccessRequests } from '../actions';
 import {
   MODULE_NAME, DEFAULT_PAGE_SIZE, ROWS_PER_PAGE_OPTIONS, RIGHT_REQUEST_SEARCH, AR_ROUTE_REQUEST,
@@ -65,7 +66,7 @@ function AccessRequestSearcher({
     (r) => (r?.requestType ? formatMessage(`requestType.${r.requestType}`) : ''),
     (r) => r?.email,
     (r) => <AccessRequestStatusChip status={r?.status} />,
-    (r) => (r?.dateCreated ? formatDateFromISO(modulesManager, intl, r.dateCreated) : ''),
+    (r) => (r?.dateCreated ? formatDateFromISO(modulesManager, intl, toDisplayTime(r.dateCreated)) : ''),
     (r) => (
       <Tooltip title={formatMessage('viewDetailsButton.tooltip')}>
         <IconButton onClick={() => open(r)}><VisibilityIcon /></IconButton>

@@ -4,13 +4,19 @@ import {
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { useModulesManager, useTranslations } from '@openimis/fe-core';
+import { toDisplayTime } from '@openimis/fe-tasaf_common';
 import { MODULE_NAME, REQUEST_STATUS } from '../../constants';
 
 export const RIGHT_APPROVAL_OVERRIDE = '240303';
 
 export function useAR() {
   const modulesManager = useModulesManager();
-  return { modulesManager, ...useTranslations(MODULE_NAME, modulesManager) };
+  const translations = useTranslations(MODULE_NAME, modulesManager);
+  return {
+    modulesManager,
+    ...translations,
+    formatDateTimeFromISO: (date) => translations.formatDateTimeFromISO(toDisplayTime(date)),
+  };
 }
 
 export const personName = (user) => {
