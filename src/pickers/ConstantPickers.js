@@ -1,6 +1,8 @@
 import React from 'react';
 import { ConstantBasedPicker } from '@openimis/fe-core';
-import { REQUEST_STATUS_LIST, REQUEST_TYPE_LIST, USER_CATEGORY_LIST } from '../constants';
+import {
+  PROFILE_STATE_LIST, REQUEST_STATUS_LIST, REQUEST_TYPE_LIST, USER_CATEGORY_LIST,
+} from '../constants';
 
 function makePicker(constants, defaultLabel) {
   return function ConstantPicker({
@@ -26,3 +28,4 @@ function makePicker(constants, defaultLabel) {
 export const AccessRequestStatusPicker = makePicker(REQUEST_STATUS_LIST, 'field.status');
 export const RequestTypePicker = makePicker(REQUEST_TYPE_LIST, 'field.requestType');
 export const UserCategoryPicker = makePicker(USER_CATEGORY_LIST, 'field.userCategory');
+export const ProfileStatePicker = makePicker(PROFILE_STATE_LIST, 'profiles.state');

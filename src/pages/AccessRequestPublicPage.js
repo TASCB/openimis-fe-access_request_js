@@ -19,7 +19,7 @@ import Autorenew from '@material-ui/icons/Autorenew';
 import ErrorOutline from '@material-ui/icons/ErrorOutline';
 import { useModulesManager, useTranslations, useHistory } from '@openimis/fe-core';
 import {
-  MODULE_NAME, AR_API_SUBMIT, AR_API_SECTIONS, AR_API_LOCATIONS,
+  MODULE_NAME, AR_API_SUBMIT, AR_API_SECTIONS, AR_API_LOCATIONS, AR_API_PROFILES,
   REQUEST_TYPE, USER_CATEGORY, ADMIN_LEVEL, PAA_SECTIONS,
 } from '../constants';
 
@@ -312,7 +312,7 @@ export default function AccessRequestPublicPage() {
 
   const [form, setForm] = useState({
     request_type: REQUEST_TYPE.NEW, full_name: '', email: '', email_confirm: '', phone: '',
-    organization_paa: '', section_group_id: '', designation: '', hp: '',
+    organization_paa: '', section_group_id: '', designation: '', hp: '', profile_id: '',
     user_category: '', administrative_level: '',
     region: '', district: '', ward: '', village: '',
   });
@@ -323,6 +323,7 @@ export default function AccessRequestPublicPage() {
 
   // Reference data (from public REST endpoints).
   const [sections, setSections] = useState([]);
+  const [profiles, setProfiles] = useState([]);
   const [locOptions, setLocOptions] = useState({
     region: [], district: [], ward: [], village: [],
   });
@@ -360,6 +361,9 @@ export default function AccessRequestPublicPage() {
     fetch(`/api/${AR_API_SECTIONS}`).then((r) => r.json())
       .then((d) => setSections((d.sections || []).map((s) => ({ value: String(s.id), label: s.name }))))
       .catch(() => setSections([]));
+    fetch(`/api/${AR_API_PROFILES}`).then((r) => r.json())
+      .then((d) => setProfiles((d.profiles || []).map((p) => ({ value: p.uuid, label: p.name }))))
+      .catch(() => setProfiles([]));
     fetchLocations(null).then((opts) => setLocOptions((p) => ({ ...p, region: opts })));
   }, []);
 
@@ -387,9 +391,9 @@ export default function AccessRequestPublicPage() {
   const onPickCategory = (e) => {
     setForm({
       ...form, user_category: e.target.value, section_group_id: '', administrative_level: '',
-      region: '', district: '', ward: '', village: '', organization_paa: '', designation: '',
+      region: '', district: '', ward: '', village: '', organization_paa: '', designation: '', profile_id: '',
     });
-    setErrors((p) => ({ ...p, user_category: null, section_group_id: null }));
+    setErrors((p) => ({ ...p, user_category: null, section_group_id: null, profile_id: null }));
   };
   const onPickAdminLevel = (e) => {
     setForm({
@@ -421,6 +425,7 @@ export default function AccessRequestPublicPage() {
     if (!form.section_group_id) errs.section_group_id = fm('public.form.err.sectionRequired');
     if (!form.user_category) errs.user_category = fm('public.form.err.categoryRequired');
 
+    if (isTasaf && !form.profile_id) errs.profile_id = fm('public.form.err.jobTitlePick');
     if (isPaa) {
       if (!form.administrative_level) errs.administrative_level = fm('public.form.err.adminLevelRequired');
       // Only validate the location levels that are actually shown for this admin level.
@@ -454,6 +459,7 @@ export default function AccessRequestPublicPage() {
       requested_location_id: isPaa ? deepestLocationId() : '',
       organization_paa: isOther ? form.organization_paa : '',
       designation: isOther ? form.designation : '',
+      profile_id: isTasaf ? form.profile_id : '',
     };
     fetch(`/api/${AR_API_SUBMIT}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -654,6 +660,16 @@ export default function AccessRequestPublicPage() {
                       icon={<GroupOutlined className={classes.inputIcon} />}
                     />
                   </div>
+
+                  {isTasaf && (
+                    <SelectField
+                      ctx={ctx}
+                      name="profile_id" required label={fm('field.jobTitle')}
+                      options={profiles}
+                      placeholder={fm('public.ph.jobTitle')}
+                      icon={<WorkOutline className={classes.inputIcon} />}
+                    />
+                  )}
 
                   {isPaa && (
                     <SelectField

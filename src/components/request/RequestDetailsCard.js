@@ -21,7 +21,6 @@ export default function RequestDetailsCard({ request }) {
   const classes = useStyles();
   const { formatMessage, formatDateTimeFromISO } = useAR();
   const [copied, setCopied] = useState(false);
-  const approval = request.approval || {};
   const notProvided = (
     <>
       <InfoOutlined className={classes.icon} />
@@ -84,8 +83,6 @@ export default function RequestDetailsCard({ request }) {
       <Divider className={classes.divider} />
       <Typography className={classes.section}>{formatMessage('request.details.workflow')}</Typography>
       <Grid container spacing={2}>
-        <InfoField sm={6} mono label={formatMessage('request.tech.flow')} value={approval.flow?.code} />
-        <InfoField sm={6} mono label={formatMessage('request.tech.entity')} value={approval.entityModel} />
         <InfoField sm={6} mono label={formatMessage('field.referenceCode')} value={request.referenceCode} />
         <InfoField sm={6} label={formatMessage('field.dateCreated')} value={request.dateCreated && formatDateTimeFromISO(request.dateCreated)} />
       </Grid>

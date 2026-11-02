@@ -196,7 +196,6 @@ export function TechnicalCard({ request }) {
   const a = request.approval;
   if (!a) return null;
   const rows = [
-    ['request.tech.flow', a.flow?.code],
     ['request.tech.model', a.entityModel],
     ['request.tech.entityId', a.objectId],
     ['request.tech.approvalId', a.uuid],

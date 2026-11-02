@@ -23,6 +23,7 @@ import {
 import {
   RIGHT_ICT_APPROVE, RIGHT_REQUEST_SEARCH, RIGHT_REQUEST_VIEW, REQUEST_STATUS, AR_ROUTE_REQUESTS,
 } from '../constants';
+import { suggestedRoleIds } from '../utils/profiles';
 
 const useStyles = makeStyles((theme) => ({ page: theme.page }));
 
@@ -76,6 +77,7 @@ export default function AccessRequestPage({ match }) {
     districtsInitFor.current = request.id;
     const district = districtOf(request.requestedLocation);
     setDistricts(district ? [district] : []);
+    setRoleIds(suggestedRoleIds(request.profile));
   }, [request]);
 
   // refresh after a mutation resolves

@@ -9,6 +9,7 @@ import { MODULE_NAME, RIGHT_PROFILE_MANAGE, RIGHT_REQUEST_SEARCH } from '../cons
 import { defaultPageStyles } from '../utils/styles';
 import AccessRequestSearcher from '../components/AccessRequestSearcher';
 import SectionManagersPanel from '../components/SectionManagersPanel';
+import AccessProfilesPanel from '../components/AccessProfilesPanel';
 
 const useStyles = makeStyles((theme) => ({
   ...defaultPageStyles(theme),
@@ -21,16 +22,19 @@ const useStyles = makeStyles((theme) => ({
 
 const TAB_REQUESTS = 'requests';
 const TAB_SECTIONS = 'sectionManagers';
+const TAB_PROFILES = 'jobTitles';
 
 export default function AccessRequestsPage() {
   const classes = useStyles();
   const modulesManager = useModulesManager();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
   const rights = useSelector((s) => s.core?.user?.i_user?.rights ?? []);
-  const [activeTab, setActiveTab] = useState(TAB_REQUESTS);
+  const canSearch = rights.includes(RIGHT_REQUEST_SEARCH);
+  const canConfigure = rights.includes(RIGHT_PROFILE_MANAGE);
+  const [activeTab, setActiveTab] = useState(canSearch ? TAB_REQUESTS : TAB_PROFILES);
 
-  if (!rights.includes(RIGHT_REQUEST_SEARCH)) return null;
-  if (!rights.includes(RIGHT_PROFILE_MANAGE)) {
+  if (!canSearch && !canConfigure) return null;
+  if (!canConfigure) {
     return (
       <div className={classes.page}>
         <Helmet title={formatMessage('requests.title')} />
@@ -48,12 +52,21 @@ export default function AccessRequestsPage() {
       <Helmet title={formatMessage('requests.title')} />
       <Paper className={classes.paper}>
         <Grid container className={`${classes.tableTitle} ${classes.tabs}`}>
+          {canSearch && (
+            <Tab
+              onChange={onChange}
+              className={tabStyle(TAB_REQUESTS)}
+              selected={isSelected(TAB_REQUESTS)}
+              value={TAB_REQUESTS}
+              label={formatMessage('requests.tab.requests')}
+            />
+          )}
           <Tab
             onChange={onChange}
-            className={tabStyle(TAB_REQUESTS)}
-            selected={isSelected(TAB_REQUESTS)}
-            value={TAB_REQUESTS}
-            label={formatMessage('requests.tab.requests')}
+            className={tabStyle(TAB_PROFILES)}
+            selected={isSelected(TAB_PROFILES)}
+            value={TAB_PROFILES}
+            label={formatMessage('requests.tab.jobTitles')}
           />
           <Tab
             onChange={onChange}
@@ -63,8 +76,13 @@ export default function AccessRequestsPage() {
             label={formatMessage('requests.tab.sectionManagers')}
           />
         </Grid>
-        <PublishedComponent pubRef="policyHolder.TabPanel" module={MODULE_NAME} index={TAB_REQUESTS} value={activeTab}>
-          <AccessRequestSearcher />
+        {canSearch && (
+          <PublishedComponent pubRef="policyHolder.TabPanel" module={MODULE_NAME} index={TAB_REQUESTS} value={activeTab}>
+            <AccessRequestSearcher />
+          </PublishedComponent>
+        )}
+        <PublishedComponent pubRef="policyHolder.TabPanel" module={MODULE_NAME} index={TAB_PROFILES} value={activeTab}>
+          <AccessProfilesPanel />
         </PublishedComponent>
         <PublishedComponent pubRef="policyHolder.TabPanel" module={MODULE_NAME} index={TAB_SECTIONS} value={activeTab}>
           <SectionManagersPanel />

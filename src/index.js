@@ -6,7 +6,7 @@ import { FormattedMessage } from '@openimis/fe-core';
 import messages_en from './translations/en.json';
 import reducer from './reducer';
 import {
-  RIGHT_REQUEST_SEARCH,
+  RIGHT_REQUEST_SEARCH, RIGHT_PROFILE_MANAGE,
   AR_ROUTE_REQUESTS, AR_ROUTE_REQUEST,
 } from './constants';
 
@@ -40,7 +40,7 @@ const DEFAULT_CONFIG = {
       text: <FormattedMessage module="access_request" id="menu.requests" />,
       icon: <HowToReg />,
       route: `/${ROUTE_REQUESTS}`,
-      filter: (rights) => rights.includes(RIGHT_REQUEST_SEARCH),
+      filter: (rights) => rights.includes(RIGHT_REQUEST_SEARCH) || rights.includes(RIGHT_PROFILE_MANAGE),
       id: 'access_request.requests',
     },
   ],

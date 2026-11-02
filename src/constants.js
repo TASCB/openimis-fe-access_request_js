@@ -63,6 +63,7 @@ export const REQUEST_STATUS_LIST = [
 ];
 export const REQUEST_TYPE_LIST = ['NEW', 'ACTIVATE'];
 export const USER_CATEGORY_LIST = ['TASAF_STAFF', 'PAA_STAFF', 'OTHER'];
+export const PROFILE_STATE_LIST = ['ACTIVE', 'INACTIVE'];
 
 export const DEFAULT_DEBOUNCE_TIME = 500;
 export const DEFAULT_PAGE_SIZE = 10;

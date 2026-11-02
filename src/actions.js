@@ -7,7 +7,7 @@ const REQUEST_PROJECTION = () => [
   'id', 'referenceCode', 'requestType', 'fullName', 'organizationPaa', 'section',
   'designation', 'email', 'phone', 'status', 'rejectionReason', 'assignedUsername',
   'userCategory', 'administrativeLevel',
-  'profile { id name code }',
+  'profile { id name code suggestedRoleIds }',
   'requestedLocation { id uuid code name type parent { id uuid code name type parent { id uuid code name type '
     + 'parent { id uuid code name type } } } }',
   'createdUser { id username }', 'userUpdated { username iUser { otherNames lastName } }',
@@ -24,7 +24,7 @@ const REQUEST_FULL_PROJECTION = () => [
 ];
 
 const PROFILE_PROJECTION = () => [
-  'id', 'code', 'name', 'description', 'suggestedRoleIds', 'isActive',
+  'id', 'uuid', 'code', 'name', 'description', 'suggestedRoleIds', 'isActive',
   'defaultLocation { id name }', 'version',
 ];
 
@@ -76,6 +76,19 @@ function submitMutation(mutation, clientMutationLabel) {
     const log = await waitForMutationLog(dispatch, meta.clientMutationId);
     dispatch({ type: 'ACCESS_REQUEST_MUTATION_RESP', payload: log, meta });
   };
+}
+
+export function saveAccessProfile(profile, clientMutationLabel) {
+  const roleIds = (profile.roleIds || []).join(', ');
+  const mutation = formatMutation(profile.uuid ? 'updateAccessProfile' : 'createAccessProfile', `
+    ${profile.uuid ? `id: "${profile.uuid}"` : ''}
+    code: "${formatGQLString(profile.code)}"
+    name: "${formatGQLString(profile.name)}"
+    description: "${formatGQLString(profile.description || '')}"
+    suggestedRoleIds: [${roleIds}]
+    isActive: ${profile.isActive ? 'true' : 'false'}
+  `, clientMutationLabel);
+  return submitMutation(mutation, clientMutationLabel);
 }
 
 export function provisionAccessRequest(requestId, username, roleIds, districtIds, clientMutationLabel) {
