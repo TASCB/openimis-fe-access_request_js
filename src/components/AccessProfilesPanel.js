@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Button, Chip, Grid, IconButton, Tooltip, Typography,
+  Button, Chip, Grid, IconButton, MenuItem, TextField, Tooltip, Typography,
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import EditIcon from '@material-ui/icons/Edit';
@@ -9,7 +9,9 @@ import _debounce from 'lodash/debounce';
 import {
   Searcher, TextInput, journalize, useModulesManager, useTranslations,
 } from '@openimis/fe-core';
-import { fetchAccessProfiles, fetchAssignableRoles, saveAccessProfile } from '../actions';
+import {
+  fetchAccessProfiles, fetchAccessSections, fetchAssignableRoles, saveAccessProfile,
+} from '../actions';
 import {
   MODULE_NAME, DEFAULT_PAGE_SIZE, ROWS_PER_PAGE_OPTIONS, RIGHT_PROFILE_MANAGE,
   DEFAULT_DEBOUNCE_TIME, EMPTY_STRING, CONTAINS_LOOKUP,
@@ -26,8 +28,8 @@ const useStyles = makeStyles((theme) => ({
   searcher: {
     '& table': { tableLayout: 'fixed' },
     '& table th:nth-child(1), & table td:nth-child(1)': { width: 110 },
-    '& table th:nth-child(4), & table td:nth-child(4)': { width: 120 },
-    '& table th:nth-child(5), & table td:nth-child(5)': { width: 56, whiteSpace: 'nowrap' },
+    '& table th:nth-child(5), & table td:nth-child(5)': { width: 120 },
+    '& table th:nth-child(6), & table td:nth-child(6)': { width: 56, whiteSpace: 'nowrap' },
   },
   form: { padding: theme.spacing(1) },
   item: { padding: theme.spacing(1) },
@@ -35,26 +37,46 @@ const useStyles = makeStyles((theme) => ({
 
 function ProfileFilter({ filters, onChangeFilters }) {
   const classes = useStyles();
+  const modulesManager = useModulesManager();
+  const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
+  const sections = useSelector((s) => s.access_request?.sections ?? []);
   const debounced = _debounce(onChangeFilters, DEFAULT_DEBOUNCE_TIME);
   const onText = (name) => (value) => debounced([{
     id: name, value, filter: value ? `${name}_${CONTAINS_LOOKUP}: "${value}"` : '',
   }]);
   const state = filters?.isActive?.value;
+  const section = filters?.sectionGroup?.value ?? '';
   return (
     <Grid container className={classes.form}>
-      <Grid item xs={3} className={classes.item}>
+      <Grid item xs={2} className={classes.item}>
         <TextInput
           module={MODULE_NAME} label="profiles.code"
           value={filters?.code?.value ?? EMPTY_STRING} onChange={onText('code')}
         />
       </Grid>
-      <Grid item xs={5} className={classes.item}>
+      <Grid item xs={3} className={classes.item}>
         <TextInput
           module={MODULE_NAME} label="profiles.name"
           value={filters?.name?.value ?? EMPTY_STRING} onChange={onText('name')}
         />
       </Grid>
       <Grid item xs={4} className={classes.item}>
+        <TextField
+          select
+          fullWidth
+          label={formatMessage('profiles.section')}
+          value={section}
+          onChange={(e) => onChangeFilters([{
+            id: 'sectionGroup',
+            value: e.target.value,
+            filter: e.target.value ? `sectionGroup_Name: ${JSON.stringify(e.target.value)}` : '',
+          }])}
+        >
+          <MenuItem value="">{formatMessage('profiles.state.null')}</MenuItem>
+          {sections.map((s) => <MenuItem key={s.sectionId} value={s.sectionName}>{s.sectionName}</MenuItem>)}
+        </TextField>
+      </Grid>
+      <Grid item xs={3} className={classes.item}>
         <ProfileStatePicker
           withNull value={state}
           onChange={(v) => onChangeFilters([{
@@ -81,6 +103,7 @@ export default function AccessProfilesPanel() {
 
   useEffect(() => {
     if (!ar.roles?.length && !ar.fetchingRoles) dispatch(fetchAssignableRoles());
+    if (!ar.sections?.length && !ar.fetchingSections) dispatch(fetchAccessSections());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -99,11 +122,14 @@ export default function AccessProfilesPanel() {
     form, `${formatMessage(form.uuid ? 'profiles.mutation.update' : 'profiles.mutation.create')} — ${form.name}`,
   ));
 
-  const headers = () => ['profiles.code', 'profiles.name', 'profiles.roles', 'profiles.state', 'emptyLabel'];
-  const sorts = () => [['code', true], ['name', true], null, ['isActive', false], null];
+  const headers = () => [
+    'profiles.code', 'profiles.name', 'profiles.section', 'profiles.roles', 'profiles.state', 'emptyLabel',
+  ];
+  const sorts = () => [['code', true], ['name', true], ['sectionGroup__name', true], null, ['isActive', false], null];
   const itemFormatters = () => [
     (p) => p.code,
     (p) => p.name,
+    (p) => p.sectionName || formatMessage('profiles.section.any'),
     (p) => suggestedRoleIds(p).map((id) => (
       <Chip key={id} size="small" className={classes.chip} label={roleName(id)} />
     )),
@@ -149,6 +175,7 @@ export default function AccessProfilesPanel() {
       <AccessProfileDialog
         open={open}
         profile={edited}
+        sections={ar.sections || []}
         onClose={() => setOpen(false)}
         onSave={save}
         submitting={ar.submittingMutation}

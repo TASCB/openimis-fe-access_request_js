@@ -25,7 +25,7 @@ const REQUEST_FULL_PROJECTION = () => [
 
 const PROFILE_PROJECTION = () => [
   'id', 'uuid', 'code', 'name', 'description', 'suggestedRoleIds', 'isActive',
-  'defaultLocation { id name }', 'version',
+  'sectionGroupId', 'sectionName', 'defaultLocation { id name }', 'version',
 ];
 
 export function fetchAccessRequests(params) {
@@ -86,6 +86,7 @@ export function saveAccessProfile(profile, clientMutationLabel) {
     name: "${formatGQLString(profile.name)}"
     description: "${formatGQLString(profile.description || '')}"
     suggestedRoleIds: [${roleIds}]
+    sectionGroupId: ${profile.sectionGroupId || 0}
     isActive: ${profile.isActive ? 'true' : 'false'}
   `, clientMutationLabel);
   return submitMutation(mutation, clientMutationLabel);

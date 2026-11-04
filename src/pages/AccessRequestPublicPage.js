@@ -345,6 +345,15 @@ export default function AccessRequestPublicPage() {
     return false;
   });
 
+  // Titles of the chosen section; a title without a section is listed under every section.
+  const profileOptions = form.section_group_id
+    ? profiles.filter((p) => !p.section || p.section === form.section_group_id) : [];
+
+  const onPickSection = (e) => {
+    setForm({ ...form, section_group_id: e.target.value, profile_id: '' });
+    setErrors((p) => ({ ...p, section_group_id: null, profile_id: null }));
+  };
+
   const set = (k) => (e) => {
     setForm({ ...form, [k]: e.target.value });
     if (errors[k]) setErrors({ ...errors, [k]: null });
@@ -362,7 +371,9 @@ export default function AccessRequestPublicPage() {
       .then((d) => setSections((d.sections || []).map((s) => ({ value: String(s.id), label: s.name }))))
       .catch(() => setSections([]));
     fetch(`/api/${AR_API_PROFILES}`).then((r) => r.json())
-      .then((d) => setProfiles((d.profiles || []).map((p) => ({ value: p.uuid, label: p.name }))))
+      .then((d) => setProfiles((d.profiles || []).map((p) => ({
+        value: p.uuid, label: p.name, section: p.section_group_id ? String(p.section_group_id) : '',
+      }))))
       .catch(() => setProfiles([]));
     fetchLocations(null).then((opts) => setLocOptions((p) => ({ ...p, region: opts })));
   }, []);
@@ -655,6 +666,7 @@ export default function AccessRequestPublicPage() {
                       ctx={ctx}
                       name="section_group_id" required label={fm('field.section')}
                       options={sectionOptions}
+                      onChange={onPickSection}
                       disabled={!form.user_category}
                       placeholder={fm('public.ph.section')}
                       icon={<GroupOutlined className={classes.inputIcon} />}
@@ -665,8 +677,9 @@ export default function AccessRequestPublicPage() {
                     <SelectField
                       ctx={ctx}
                       name="profile_id" required label={fm('field.jobTitle')}
-                      options={profiles}
-                      placeholder={fm('public.ph.jobTitle')}
+                      options={profileOptions}
+                      disabled={!form.section_group_id}
+                      placeholder={fm(form.section_group_id ? 'public.ph.jobTitle' : 'public.ph.jobTitleSection')}
                       icon={<WorkOutline className={classes.inputIcon} />}
                     />
                   )}

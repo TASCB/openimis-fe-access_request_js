@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Grid, Switch, TextField,
+  Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Grid, MenuItem, Switch, TextField,
 } from '@material-ui/core';
 import { useModulesManager, useTranslations } from '@openimis/fe-core';
 import { MODULE_NAME } from '../constants';
@@ -8,7 +8,7 @@ import { suggestedRoleIds } from '../utils/profiles';
 import RolePicker from './RolePicker';
 
 const EMPTY = {
-  uuid: null, code: '', name: '', description: '', roleIds: [], isActive: true,
+  uuid: null, code: '', name: '', description: '', sectionGroupId: '', roleIds: [], isActive: true,
 };
 
 const toForm = (p) => (p ? {
@@ -16,12 +16,13 @@ const toForm = (p) => (p ? {
   code: p.code || '',
   name: p.name || '',
   description: p.description || '',
+  sectionGroupId: p.sectionGroupId || '',
   roleIds: suggestedRoleIds(p),
   isActive: !!p.isActive,
 } : EMPTY);
 
 export default function AccessProfileDialog({
-  open, profile, onClose, onSave, submitting,
+  open, profile, sections, onClose, onSave, submitting,
 }) {
   const modulesManager = useModulesManager();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
@@ -61,6 +62,21 @@ export default function AccessProfileDialog({
               value={form.description}
               onChange={(e) => set('description')(e.target.value)}
             />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              select
+              fullWidth
+              label={formatMessage('profiles.section')}
+              helperText={formatMessage('profiles.section.help')}
+              value={form.sectionGroupId}
+              onChange={(e) => set('sectionGroupId')(e.target.value)}
+            >
+              <MenuItem value="">{formatMessage('profiles.section.any')}</MenuItem>
+              {(sections || []).map((s) => (
+                <MenuItem key={s.sectionId} value={s.sectionId}>{s.sectionName}</MenuItem>
+              ))}
+            </TextField>
           </Grid>
           <Grid item xs={12}>
             <RolePicker
