@@ -2,6 +2,7 @@ import {
   graphql, formatMutation, formatPageQueryWithCount, formatGQLString,
 } from '@openimis/fe-core';
 import { ACTION_TYPE } from './reducer';
+import { ERROR, REQUEST, SUCCESS } from './utils/action-type';
 
 const REQUEST_PROJECTION = () => [
   'id', 'referenceCode', 'requestType', 'fullName', 'organizationPaa', 'section',
@@ -105,10 +106,37 @@ export function provisionAccessRequest(requestId, username, roleIds, districtIds
 
 // Core roles offered in the provisioning picker. `node.id` is a relay global id; the
 // provision mutation takes the integer Role id, so callers decodeId() before sending.
-// 100 is the server's page cap; asking for more fails the whole query and empties the picker.
+// The server caps a page at 100, so follow the cursor until every role is loaded.
+const ROLE_PAGE_SIZE = 100;
+const ROLE_MAX_PAGES = 20;
+
+const rolePageQuery = (after) => `query { role(first: ${ROLE_PAGE_SIZE}, orderBy: ["name"]`
+  + `${after ? `, after: "${after}"` : ''}) { totalCount pageInfo { hasNextPage endCursor } `
+  + 'edges { node { id name isSystem isBlocked } } } }';
+
 export function fetchAssignableRoles() {
-  const payload = `query { role(first: 100, orderBy: ["name"]) { totalCount edges { node { id name isSystem isBlocked } } } }`;
-  return graphql(payload, ACTION_TYPE.SEARCH_ROLES);
+  return async (dispatch) => {
+    dispatch({ type: REQUEST(ACTION_TYPE.SEARCH_ROLES) });
+    const edges = [];
+    let after = null;
+    for (let page = 0; page < ROLE_MAX_PAGES; page += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      const response = await dispatch(graphql(rolePageQuery(after), 'ACCESS_REQUEST_ROLES_PAGE'));
+      if (response?.error) {
+        dispatch({ type: ERROR(ACTION_TYPE.SEARCH_ROLES), payload: response.payload });
+        return;
+      }
+      const connection = response?.payload?.data?.role;
+      if (!connection) {
+        dispatch({ type: SUCCESS(ACTION_TYPE.SEARCH_ROLES), payload: response?.payload ?? {} });
+        return;
+      }
+      edges.push(...connection.edges);
+      if (!connection.pageInfo?.hasNextPage) break;
+      after = connection.pageInfo.endCursor;
+    }
+    dispatch({ type: SUCCESS(ACTION_TYPE.SEARCH_ROLES), payload: { data: { role: { edges } } } });
+  };
 }
 
 // Approval Engine decisions on the application's current step. They reuse this module's
