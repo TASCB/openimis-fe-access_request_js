@@ -22,6 +22,7 @@ import {
   MODULE_NAME, AR_API_SUBMIT, AR_API_SECTIONS, AR_API_LOCATIONS, AR_API_PROFILES,
   REQUEST_TYPE, USER_CATEGORY, ADMIN_LEVEL, PAA_SECTIONS,
 } from '../constants';
+import { titleLabel } from '../utils/profiles';
 
 const LOC_CHAIN = {
   [ADMIN_LEVEL.PAA]: ['region', 'district'],
@@ -372,7 +373,7 @@ export default function AccessRequestPublicPage() {
       .catch(() => setSections([]));
     fetch(`/api/${AR_API_PROFILES}`).then((r) => r.json())
       .then((d) => setProfiles((d.profiles || []).map((p) => ({
-        value: p.uuid, label: p.name, section: p.section_group_id ? String(p.section_group_id) : '',
+        value: p.uuid, label: titleLabel(p), section: p.section_group_id ? String(p.section_group_id) : '',
       }))))
       .catch(() => setProfiles([]));
     fetchLocations(null).then((opts) => setLocOptions((p) => ({ ...p, region: opts })));

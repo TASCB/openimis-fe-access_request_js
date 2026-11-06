@@ -7,6 +7,7 @@ import FileCopyOutlined from '@material-ui/icons/FileCopyOutlined';
 import InfoOutlined from '@material-ui/icons/InfoOutlined';
 import { InfoField, RequestCard, useAR } from './common';
 import { USER_CATEGORY } from '../../constants';
+import { titleLabel } from '../../utils/profiles';
 
 const useStyles = makeStyles((theme) => ({
   section: {
@@ -73,7 +74,7 @@ export default function RequestDetailsCard({ request }) {
         )}
         <InfoField
           label={formatMessage('field.profile')}
-          value={request.profile?.name}
+          value={titleLabel(request.profile)}
           missing={formatMessage('request.details.profileAtProvision')}
         />
         {!!request.assignedUsername && <InfoField label={formatMessage('field.assignedUsername')} value={request.assignedUsername} />}
