@@ -9,6 +9,7 @@ import MailOutline from '@material-ui/icons/MailOutline';
 import PersonOutline from '@material-ui/icons/PersonOutline';
 import PhoneOutlined from '@material-ui/icons/PhoneOutlined';
 import BusinessOutlined from '@material-ui/icons/BusinessOutlined';
+import AccountTreeOutlined from '@material-ui/icons/AccountTreeOutlined';
 import WorkOutline from '@material-ui/icons/WorkOutline';
 import GroupOutlined from '@material-ui/icons/GroupOutlined';
 import CategoryOutlined from '@material-ui/icons/CategoryOutlined';
@@ -19,7 +20,7 @@ import Autorenew from '@material-ui/icons/Autorenew';
 import ErrorOutline from '@material-ui/icons/ErrorOutline';
 import { useModulesManager, useTranslations, useHistory } from '@openimis/fe-core';
 import {
-  MODULE_NAME, AR_API_SUBMIT, AR_API_SECTIONS, AR_API_LOCATIONS, AR_API_PROFILES,
+  MODULE_NAME, AR_API_SUBMIT, AR_API_SECTIONS, AR_API_UNITS, AR_API_LOCATIONS, AR_API_PROFILES,
   REQUEST_TYPE, USER_CATEGORY, ADMIN_LEVEL, PAA_SECTIONS,
 } from '../constants';
 import { titleLabel } from '../utils/profiles';
@@ -313,7 +314,7 @@ export default function AccessRequestPublicPage() {
 
   const [form, setForm] = useState({
     request_type: REQUEST_TYPE.NEW, full_name: '', email: '', email_confirm: '', phone: '',
-    organization_paa: '', section_group_id: '', designation: '', hp: '', profile_id: '',
+    organization_paa: '', section_group_id: '', unit_id: '', designation: '', hp: '', profile_id: '',
     user_category: '', administrative_level: '',
     region: '', district: '', ward: '', village: '',
   });
@@ -325,6 +326,7 @@ export default function AccessRequestPublicPage() {
   // Reference data (from public REST endpoints).
   const [sections, setSections] = useState([]);
   const [profiles, setProfiles] = useState([]);
+  const [units, setUnits] = useState([]);
   const [locOptions, setLocOptions] = useState({
     region: [], district: [], ward: [], village: [],
   });
@@ -346,13 +348,21 @@ export default function AccessRequestPublicPage() {
     return false;
   });
 
-  // Titles of the chosen section; a title without a section is listed under every section.
-  const profileOptions = form.section_group_id
-    ? profiles.filter((p) => !p.section || p.section === form.section_group_id) : [];
+  const unitOptions = units.filter((u) => u.section === form.section_group_id);
+  const hasUnits = isTasaf && unitOptions.length > 0;
+  const profileOptions = !form.section_group_id ? [] : profiles.filter((p) => (
+    (!p.section || p.section === form.section_group_id)
+    && (!hasUnits || !p.unit || p.unit === form.unit_id)));
+  const titleBlocked = !form.section_group_id || (hasUnits && !form.unit_id);
 
   const onPickSection = (e) => {
-    setForm({ ...form, section_group_id: e.target.value, profile_id: '' });
-    setErrors((p) => ({ ...p, section_group_id: null, profile_id: null }));
+    setForm({ ...form, section_group_id: e.target.value, unit_id: '', profile_id: '' });
+    setErrors((p) => ({ ...p, section_group_id: null, unit_id: null, profile_id: null }));
+  };
+
+  const onPickUnit = (e) => {
+    setForm({ ...form, unit_id: e.target.value, profile_id: '' });
+    setErrors((p) => ({ ...p, unit_id: null, profile_id: null }));
   };
 
   const set = (k) => (e) => {
@@ -374,8 +384,14 @@ export default function AccessRequestPublicPage() {
     fetch(`/api/${AR_API_PROFILES}`).then((r) => r.json())
       .then((d) => setProfiles((d.profiles || []).map((p) => ({
         value: p.uuid, label: titleLabel(p), section: p.section_group_id ? String(p.section_group_id) : '',
+        unit: p.unit_id || '',
       }))))
       .catch(() => setProfiles([]));
+    fetch(`/api/${AR_API_UNITS}`).then((r) => r.json())
+      .then((d) => setUnits((d.units || []).map((u) => ({
+        value: u.id, label: u.name, section: String(u.section_group_id),
+      }))))
+      .catch(() => setUnits([]));
     fetchLocations(null).then((opts) => setLocOptions((p) => ({ ...p, region: opts })));
   }, []);
 
@@ -402,7 +418,7 @@ export default function AccessRequestPublicPage() {
   // Changing category/level must clear now-hidden fields so they never validate or submit.
   const onPickCategory = (e) => {
     setForm({
-      ...form, user_category: e.target.value, section_group_id: '', administrative_level: '',
+      ...form, user_category: e.target.value, section_group_id: '', unit_id: '', administrative_level: '',
       region: '', district: '', ward: '', village: '', organization_paa: '', designation: '', profile_id: '',
     });
     setErrors((p) => ({ ...p, user_category: null, section_group_id: null, profile_id: null }));
@@ -437,6 +453,7 @@ export default function AccessRequestPublicPage() {
     if (!form.section_group_id) errs.section_group_id = fm('public.form.err.sectionRequired');
     if (!form.user_category) errs.user_category = fm('public.form.err.categoryRequired');
 
+    if (hasUnits && !form.unit_id) errs.unit_id = fm('public.form.err.unitRequired');
     if (isTasaf && !form.profile_id) errs.profile_id = fm('public.form.err.jobTitlePick');
     if (isPaa) {
       if (!form.administrative_level) errs.administrative_level = fm('public.form.err.adminLevelRequired');
@@ -472,6 +489,7 @@ export default function AccessRequestPublicPage() {
       organization_paa: isOther ? form.organization_paa : '',
       designation: isOther ? form.designation : '',
       profile_id: isTasaf ? form.profile_id : '',
+      unit_id: hasUnits ? form.unit_id : '',
     };
     fetch(`/api/${AR_API_SUBMIT}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -484,7 +502,7 @@ export default function AccessRequestPublicPage() {
         // Show server-side rejections on the field they belong to.
         const fieldErrs = {};
         if (d.error === 'missing_fields') {
-          const formName = { section: 'section_group_id', location: locChain[locChain.length - 1] };
+          const formName = { section: 'section_group_id', unit: 'unit_id', location: locChain[locChain.length - 1] };
           (d.fields || []).forEach((f) => { fieldErrs[formName[f] || f] = fm('public.form.err.required'); });
         } else if (d.error === 'invalid_fields' || d.error === 'duplicate_request') {
           Object.entries(d.fields || {}).forEach(([f, code]) => {
@@ -675,14 +693,27 @@ export default function AccessRequestPublicPage() {
                   </div>
 
                   {isTasaf && (
-                    <SelectField
-                      ctx={ctx}
-                      name="profile_id" required label={fm('field.jobTitle')}
-                      options={profileOptions}
-                      disabled={!form.section_group_id}
-                      placeholder={fm(form.section_group_id ? 'public.ph.jobTitle' : 'public.ph.jobTitleSection')}
-                      icon={<WorkOutline className={classes.inputIcon} />}
-                    />
+                    <>
+                      {hasUnits && (
+                        <SelectField
+                          ctx={ctx}
+                          name="unit_id" required label={fm('field.unit')}
+                          options={unitOptions}
+                          onChange={onPickUnit}
+                          placeholder={fm('public.ph.unit')}
+                          icon={<AccountTreeOutlined className={classes.inputIcon} />}
+                        />
+                      )}
+                      <SelectField
+                        ctx={ctx}
+                        name="profile_id" required label={fm('field.jobTitle')}
+                        options={profileOptions}
+                        disabled={titleBlocked}
+                        placeholder={fm(!form.section_group_id ? 'public.ph.jobTitleSection'
+                          : titleBlocked ? 'public.ph.jobTitleUnit' : 'public.ph.jobTitle')}
+                        icon={<WorkOutline className={classes.inputIcon} />}
+                      />
+                    </>
                   )}
 
                   {isPaa && (

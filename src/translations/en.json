@@ -268,7 +268,7 @@
   "access_request.requests.tab.requests": "Requests",
   "access_request.requests.tab.sectionManagers": "Section managers",
   "access_request.sections.title": "Section managers",
-  "access_request.sections.help": "A section manager signs the Department / Line Manager step for applications from their section. They need the Access Request Sponsor role and membership of the section here. Sections without a manager are signed by an administrator.",
+  "access_request.sections.help": "Unit managers sign the Line Manager step for their unit; a unit head's own application goes to their director. They need the Access Request Sponsor role. Without a manager, an administrator signs.",
   "access_request.sections.section": "Section",
   "access_request.sections.managers": "Managers",
   "access_request.sections.user": "User",
@@ -320,5 +320,11 @@
   "access_request.profiles.save": "Save",
   "access_request.profiles.cancel": "Cancel",
   "access_request.profiles.mutation.create": "Add job title",
-  "access_request.profiles.mutation.update": "Update job title"
+  "access_request.profiles.mutation.update": "Update job title",
+  "access_request.field.unit": "Unit",
+  "access_request.public.ph.unit": "— select your unit —",
+  "access_request.public.ph.jobTitleUnit": "— select your unit first —",
+  "access_request.public.form.err.unitRequired": "Please select your unit.",
+  "access_request.public.form.err.server.unit_id.invalid": "This unit is not part of the chosen section.",
+  "access_request.profiles.sectionUnit": "Section · Unit"
 }

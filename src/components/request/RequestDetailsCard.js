@@ -59,6 +59,7 @@ export default function RequestDetailsCard({ request }) {
         <InfoField label={formatMessage('field.phone')} value={request.phone} missing={notProvided} />
         <InfoField label={formatMessage('field.userCategory')} value={enumLabel('userCategory', request.userCategory)} />
         <InfoField label={formatMessage('field.section')} value={request.section} missing={notProvided} />
+        {!!request.unitName && <InfoField label={formatMessage('field.unit')} value={request.unitName} />}
         <InfoField label={formatMessage('field.requestType')} value={enumLabel('requestType', request.requestType)} />
         {isPaa && (
           <>

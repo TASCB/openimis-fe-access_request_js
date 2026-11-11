@@ -7,7 +7,7 @@ import { ERROR, REQUEST, SUCCESS } from './utils/action-type';
 const REQUEST_PROJECTION = () => [
   'id', 'referenceCode', 'requestType', 'fullName', 'organizationPaa', 'section',
   'designation', 'email', 'phone', 'status', 'rejectionReason', 'assignedUsername',
-  'userCategory', 'administrativeLevel',
+  'userCategory', 'administrativeLevel', 'unitName',
   'profile { id name code suggestedRoleIds }',
   'requestedLocation { id uuid code name type parent { id uuid code name type parent { id uuid code name type '
     + 'parent { id uuid code name type } } } }',
@@ -26,7 +26,7 @@ const REQUEST_FULL_PROJECTION = () => [
 
 const PROFILE_PROJECTION = () => [
   'id', 'uuid', 'code', 'name', 'description', 'suggestedRoleIds', 'isActive',
-  'sectionGroupId', 'sectionName', 'defaultLocation { id name }', 'version',
+  'sectionGroupId', 'sectionName', 'unitId', 'unitName', 'defaultLocation { id name }', 'version',
 ];
 
 export function fetchAccessRequests(params) {
@@ -160,7 +160,7 @@ export const rejectAccessRequestStep = (requestUuid, stepUuid, comment, label) =
 
 export function fetchAccessSections() {
   const managers = 'managers { userId username otherNames lastName canApprove }';
-  return graphql(`query { accessSections { sectionId sectionName ${managers} } }`, ACTION_TYPE.SEARCH_SECTIONS);
+  return graphql(`query { accessSections { sectionId sectionName unitOf ${managers} } }`, ACTION_TYPE.SEARCH_SECTIONS);
 }
 
 function sectionManagerMutation(name, sectionId, userUuid, clientMutationLabel) {

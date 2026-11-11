@@ -4,7 +4,7 @@ import {
   Button, Chip, Grid, MenuItem, TextField, Tooltip, Typography,
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import WarningIcon from '@material-ui/icons/Warning';
+import WarningIcon from '@material-ui/icons/ErrorOutline';
 import {
   PublishedComponent, Table, decodeId, journalize, useModulesManager, useTranslations,
 } from '@openimis/fe-core';
@@ -13,6 +13,7 @@ import { MODULE_NAME } from '../constants';
 
 const useStyles = makeStyles((theme) => ({
   help: { marginBottom: theme.spacing(2) },
+  unitOf: { display: 'block', color: theme.palette.text.secondary },
   chip: { margin: theme.spacing(0.25) },
 }));
 
@@ -57,7 +58,12 @@ export default function SectionManagersPanel() {
   };
 
   const itemFormatters = () => [
-    (s) => s.sectionName,
+    (s) => (s.unitOf ? (
+      <>
+        {s.sectionName}
+        <Typography variant="caption" className={classes.unitOf}>{s.unitOf}</Typography>
+      </>
+    ) : s.sectionName),
     (s) => (
       <>
         {s.managers.map((m) => {
@@ -93,7 +99,11 @@ export default function SectionManagersPanel() {
             value={sectionId}
             onChange={(e) => setSectionId(e.target.value)}
           >
-            {sections.map((s) => <MenuItem key={s.sectionId} value={s.sectionId}>{s.sectionName}</MenuItem>)}
+            {sections.map((s) => (
+              <MenuItem key={s.sectionId} value={s.sectionId}>
+                {s.unitOf ? `${s.sectionName} (${s.unitOf})` : s.sectionName}
+              </MenuItem>
+            ))}
           </TextField>
         </Grid>
         <Grid item xs={12} sm={5}>

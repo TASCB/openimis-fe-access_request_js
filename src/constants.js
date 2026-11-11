@@ -13,6 +13,7 @@ export const AR_ROUTE_PROFILES = 'access_request.route.profiles';
 export const AR_API_BASE = 'access_request';
 export const AR_API_PROFILES = `${AR_API_BASE}/profiles/`;
 export const AR_API_SECTIONS = `${AR_API_BASE}/sections/`;
+export const AR_API_UNITS = `${AR_API_BASE}/units/`;
 export const AR_API_LOCATIONS = `${AR_API_BASE}/locations/`;
 export const AR_API_SUBMIT = `${AR_API_BASE}/submit/`;
 export const AR_API_STATUS = `${AR_API_BASE}/status/`;

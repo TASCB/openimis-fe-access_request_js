@@ -73,7 +73,9 @@ function ProfileFilter({ filters, onChangeFilters }) {
           }])}
         >
           <MenuItem value="">{formatMessage('profiles.state.null')}</MenuItem>
-          {sections.map((s) => <MenuItem key={s.sectionId} value={s.sectionName}>{s.sectionName}</MenuItem>)}
+          {sections.filter((s) => !s.unitOf).map((s) => (
+            <MenuItem key={s.sectionId} value={s.sectionName}>{s.sectionName}</MenuItem>
+          ))}
         </TextField>
       </Grid>
       <Grid item xs={3} className={classes.item}>
@@ -123,13 +125,13 @@ export default function AccessProfilesPanel() {
   ));
 
   const headers = () => [
-    'profiles.code', 'profiles.name', 'profiles.section', 'profiles.roles', 'profiles.state', 'emptyLabel',
+    'profiles.code', 'profiles.name', 'profiles.sectionUnit', 'profiles.roles', 'profiles.state', 'emptyLabel',
   ];
   const sorts = () => [['code', true], ['name', true], ['sectionGroup__name', true], null, ['isActive', false], null];
   const itemFormatters = () => [
     (p) => p.code,
     (p) => p.name,
-    (p) => p.sectionName || formatMessage('profiles.section.any'),
+    (p) => [p.sectionName || formatMessage('profiles.section.any'), p.unitName].filter(Boolean).join(' · '),
     (p) => suggestedRoleIds(p).map((id) => (
       <Chip key={id} size="small" className={classes.chip} label={roleName(id)} />
     )),
